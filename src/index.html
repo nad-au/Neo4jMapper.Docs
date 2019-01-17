@@ -36,14 +36,13 @@
           <span class="navbar-divider d-mobile-none"></span>
 
           <nav class="nav nav-navbar">
-            <a class="nav-link" href="#">Usage Guide</a>
-            <a class="nav-link" href="#">Examples</a>
-            <a class="nav-link" href="#">Download</a>
-            <a class="nav-link" href="#">Support</a>
+            <a class="nav-link active" href="index.html">Home</a>
+            <a class="nav-link" href="guide.html">Usage Guide</a>
+            <a class="nav-link" href="examples.html">Examples</a>
+            <a class="nav-link" href="download.html">Download</a>
+            <a class="nav-link" href="support.html">Support</a>
           </nav>
         </section>
-
-        <a class="btn btn-sm btn-round btn-dark" href="readme.html">Read me</a>
 
       </div>
     </nav><!-- /.navbar -->
@@ -73,10 +72,8 @@
             <div class="col-lg-8 mx-auto">
               <h1>What is Neo4jMapper?</h1>
               <p class="lead">It is A .NET Standard 2.0 library to simplify mapping of cypher values onto your entity models.</p>
-            </div>
-            <div class="col-lg-8 mx-auto">
               <h1>What does it do?</h1>
-              <p class="lead">It uses <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>  mapper to
+              <p>It uses <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>  mapper to
                 convert the records returned by the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> into 
                 instances of your entities, and it provides utilities to convert those entities back into a format the 
                 Neo4j Driver can use to update the database.</p>
@@ -100,31 +97,73 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               </code></pre>
               <p>The example cypher query returns a single <i>Person</i> node and a list of <i>Movie</i> nodes.
               We <i>await</i> the response from the database request and collect the cypher values using the
-              <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> <span class="badge badge-secondary">SingleAsync</span> method.</p>
-              <p>We pass the results to the <span class="badge badge-secondary">Map</span> method which uses a <i>Func</i> to declare the expected input type
-              for each cypher value, in this case <i>Person</i> and <i>IEnumerable&lt;Movie&gt;</i>, and the final
-              output type, <i>Person</i>.</p>
-              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to the declared .NET types, and pass them to the Func 
-              to construct the final output.</p>
+              <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> <span class="badge badge-secondary">SingleAsync</span> method.
+              </p>
+              <p>We pass the results to the <span class="badge badge-secondary">Map</span> method which uses a <i>Func</i> delegate to declare the expected input type(s)
+              for the cypher values, in this case <i>Person</i> and <i>IEnumerable&lt;Movie&gt;</i>, and the final
+              output type, <i>Person</i>.
+              </p>
+              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to the declared .NET types, and pass them as input parameters
+              to the <i>Func</i> in order to construct the output.
+              </p>
               <h1>What else does it do?</h1>
               <p>These are some of the features of Neo4jMapper:</p>
               <ul>
-                <li>Simple Map API which extends Neo4j Driver's IRecord to greatly simplify the extraction and projection of cypher values
+                <li>Simple Map API which extends Neo4j Driver's <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a> to greatly simplify the extraction and projection of cypher values
                 onto your entity models.</li>
-                <li>Works asynchronously via IStatementResultCursor methods or synchronously via IStatementResult.</li>
+                <li>Works asynchronously via <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResultCursor.cs">IStatementResultCursor</a> methods or synchronously via <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResult.cs">IStatementResult</a>.</li>
                 <li>Automatic mapping of node Ids to your entity models, and GetNode & SetNode helper methods to simplify writing CRUD
                 methods.</li>
-                <li>Custom converters to facilitate conversion between Neo4j Driver's temporal data types such as ZonedDateTime and .NET
+                <li>Custom converters to facilitate conversion between Neo4j Driver's temporal data types such as <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/Types/ZonedDateTime.cs">ZonedDateTime</a> and .NET
                 CLR types such as DateTimeOffset.</li>
                 <li>Neo4jParameters wrapper and Dictionary extension methods to assist in creating parameter maps when performing cypher
                 updates.</li>
-                <li>Superior performance due to the use of best-in-class mapper ServiceStack.Text. Benchmarks show queries in excess of 4x
-                quicker than Neo4jClient.</li>
+                <li>Superior performance due to the use of best-in-class mapper <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>. Benchmarks show queries in excess of 4x
+                quicker than <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>.</li>
                 <li>Targets .NET Standard 2.0 for use in full .NET Framework or cross-platform .NET Core projects.</li>
                 <li>100% Code Coverage.</li>
                 <li>Benchmarks.</li>
                 <li>Examples.</li>
               </ul>
+              <h1>Why do I need it?</h1>
+              <p>Working directly with the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> is a pain in all but the
+              simplest of applications. Each cypher value is returned as a <i>Dictionary&lt;string, object&gt;</i> and each property must be individually
+              mapped from the dictionary onto your entity.
+              </p>
+              <p>Neo4jMapper does all the hard work, and using optimised reflection methods, automatically maps values by convention, dealing with case mismatches,
+              handling collections, and ignoring properties when configured to do so.
+              </p>
+              <h2>What about Neo4jClient? It does the same thing, right?</h2>
+              <p>Neo4jMapper works similarly to <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>, and performs automatic cypher value mapping.</p>
+              <p>Neo4jClient is a mature library and uses the Neo4j <a href="https://neo4j.com/docs/rest-docs/current/" >REST API</a> and supports all Neo4j versions,
+              as well as the new <a href="https://boltprotocol.org/">BOLT</a> protocol introduced in v3.
+              </p>
+              <p>Neo4jMapper works only with Neo4j v3+ and like <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>, Neo4jMapper uses the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a>
+              for BOLT protocol support. Neo4jMapper differs in its approach to mapping. Rather than trying to abstract parts of the cypher language, something like
+              what Entity Framework or another <a href="https://en.wikipedia.org/wiki/Object-relational_mapping">ORM</a> would do, Neo4jMapper does not change how a developer would use the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a>.
+              Instead, Neo4jMapper simply adds extension methods to convert the <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a> output into .NET types.
+              </p>
+              <p>Neo4jMapper also benefits in using <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>, a modern, high-performance mapper.
+              This results in a significant performance boost when performing cypher queries. Checkout the <a href="https://github.com/barnardos-au/Neo4jMapper/tree/master/src/Benchmarks">benchmarks</a> which compares the performance of the different libraries.
+              </p>
+              <h1>Where do I download it?</h1>
+              <p>The easiest way to add Neo4jMapper to your .NET project is to use the NuGet Package Manager.</p>
+              <h2>Using Visual Studio</h2>
+              <p>From Visual Studio use the Nuget Package Manager to browse to the <a href="https://www.nuget.org/packages/Neo4jMapper/">Neo4jMapper</a> package and install it to your project.
+              Alternatively you can use the Package Manager Console:
+              </p>
+              <pre><code class="language-powershell">Install-Package Neo4jMapper</code></pre>
+              <h2>Using .NET Core Common Language Runtime (CoreCLR)</h2>
+              <p>If you are developing .NET Core projects and you are using the command line tools, then you can run the following
+              command from within your project directory:
+              </p>
+              <pre><code class="language-powershell">dotnet add package Neo4jMapper</code></pre>
+              <h1>How do I use Neo4jMapper?</h1>
+              <p>Read the Usage Guide.</p>
+              <h1>Where can I obtain help & support?</h1>
+              <p>For general usage help please ask a question on <a href="https://stackoverflow.com/questions/tagged/neo4jmapper">StackOverflow</a>. To report a bug, please raise an <a href="https://github.com/barnardos-au/Neo4jMapper/issues">issue</a>.
+              To help make this software even better, please fork the <a href="https://github.com/barnardos-au/Neo4jMapper">repository</a>, add your changes and raise a <a href="https://github.com/barnardos-au/Neo4jMapper/pulls">pull request</a>.
+              </p>
             </div>
           </div>
 
@@ -142,24 +181,20 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
         <div class="row gap-y align-items-center">
 
           <div class="col-6 col-lg-3">
-            <a href="index.html"><img src="assets/img/logo-dark.png" alt="logo"></a>
+            <a href="index.html"><img src="assets/img/neo4j-mapper-logo-dark.png" alt="logo"></a>
           </div>
 
           <div class="col-6 col-lg-3 text-right order-lg-last">
             <div class="social">
-              <a class="social-facebook" href="https://www.facebook.com/thethemeio"><i class="fa fa-facebook"></i></a>
-              <a class="social-twitter" href="https://twitter.com/thethemeio"><i class="fa fa-twitter"></i></a>
-              <a class="social-instagram" href="https://www.instagram.com/thethemeio/"><i class="fa fa-instagram"></i></a>
-              <a class="social-dribbble" href="https://dribbble.com/thethemeio"><i class="fa fa-dribbble"></i></a>
+              <a class="social-twitter" href="https://twitter.com/ImTheRealNeil"><i class="fa fa-twitter"></i></a>
+              <a class="social-github" href="https://github.com/neildobson-au"><i class="fa fa-github"></i></a>
+              <a class="social-github" href="https://www.linkedin.com/in/neil-dobson/"><i class="fa fa-linkedin"></i></a>
             </div>
           </div>
 
           <div class="col-lg-6">
             <div class="nav nav-bold nav-uppercase nav-trim justify-content-lg-center">
-              <a class="nav-link" href="#">About</a>
-              <a class="nav-link" href="#">Blog</a>
-              <a class="nav-link" href="#">Policy</a>
-              <a class="nav-link" href="#">Contact</a>
+              <a class="nav-link" href="about.html">About</a>
             </div>
           </div>
 
