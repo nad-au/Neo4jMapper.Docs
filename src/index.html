@@ -134,16 +134,16 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               handling collections, and ignoring properties when configured to do so.
               </p>
               <h2>What about Neo4jClient? It does the same thing, right?</h2>
-              <p>Neo4jMapper works similarly to <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>, and performs automatic cypher value mapping.</p>
-              <p>Neo4jClient is a mature library and uses the Neo4j <a href="https://neo4j.com/docs/rest-docs/current/" >REST API</a> and supports all Neo4j versions,
+              <p>Neo4jMapper works similarly to <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a> in that it performs automatic cypher value mapping.</p>
+              <p><a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a> is a mature library that uses the Neo4j <a href="https://neo4j.com/docs/rest-docs/current/" >REST API</a> and supports all Neo4j versions,
               as well as the new <a href="https://boltprotocol.org/">BOLT</a> protocol introduced in v3.
               </p>
-              <p>Neo4jMapper works only with Neo4j v3+ and like <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>, Neo4jMapper uses the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a>
+              <p>Neo4jMapper works only with Neo4j v3+ and like <a href="https://github.com/Readify/Neo4jClient">Neo4jClient</a>, uses the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a>
               for BOLT protocol support. Neo4jMapper differs in its approach to mapping. Rather than trying to abstract parts of the cypher language, something like
               what Entity Framework or another <a href="https://en.wikipedia.org/wiki/Object-relational_mapping">ORM</a> would do, Neo4jMapper does not change how a developer would use the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a>.
               Instead, Neo4jMapper simply adds extension methods to convert the <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a> output into .NET types.
               </p>
-              <p>Neo4jMapper also benefits in using <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>, a modern, high-performance mapper.
+              <p>Neo4jMapper also benefits from using <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>, a modern, high-performance mapper.
               This results in a significant performance boost when performing cypher queries. Checkout the <a href="https://github.com/barnardos-au/Neo4jMapper/tree/master/src/Benchmarks">benchmarks</a> which compares the performance of the different libraries.
               </p>
               <h1>Where do I download it?</h1>
