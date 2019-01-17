@@ -10,21 +10,15 @@
 
     <!-- Styles -->
     <link href="assets/css/page.min.css" rel="stylesheet">
+    <link href="assets/css/prism.css" rel="stylesheet" />
     
     <!-- Favicons -->
     <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
     <link rel="icon" href="assets/img/favicon.png">
 
-    <!--  Open Graph Tags -->
-    <meta property="og:title" content="TheSaaS">
-    <meta property="og:description" content="A responsive, professional, and multipurpose SaaS, Software, Startup and WebApp landing template powered by Bootstrap 4.">
-    <meta property="og:image" content="http://thetheme.io/thesaas/assets/img/og-img.jpg">
-    <meta property="og:url" content="http://thetheme.io/thesaas/">
-    <meta name="twitter:card" content="summary_large_image">
   </head>
 
   <body>
-
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light navbar-stick-dark" data-navbar="sticky">
@@ -32,18 +26,20 @@
 
         <div class="navbar-left">
           <button class="navbar-toggler" type="button">&#9776;</button>
-          <a class="navbar-brand" style="" href="index.html">Neo4j<span class="font-weight-bold">Mapper &lt;&gt;</span></a>
+          <a class="navbar-brand" href="index.html">
+              <img class="logo-dark" src="assets/img/neo4j-mapper-logo-dark.png" alt="logo">
+              <img class="logo-light" src="assets/img/neo4j-mapper-logo-light.png" alt="logo">
+          </a>
         </div>
 
         <section class="navbar-mobile">
           <span class="navbar-divider d-mobile-none"></span>
 
           <nav class="nav nav-navbar">
-            <a class="nav-link" href="#">Features</a>
-            <a class="nav-link" href="#">Pricing</a>
-            <a class="nav-link" href="#">Blog</a>
-            <a class="nav-link" href="#">Help</a>
-            <a class="nav-link" href="#">Contact</a>
+            <a class="nav-link" href="#">Usage Guide</a>
+            <a class="nav-link" href="#">Examples</a>
+            <a class="nav-link" href="#">Download</a>
+            <a class="nav-link" href="#">Support</a>
           </nav>
         </section>
 
@@ -54,7 +50,7 @@
 
 
     <!-- Header -->
-    <header class="header text-white pt-8 pb-6" style="background-image: url('https://s3.amazonaws.com/dev.assets.neo4j.com/wp-content/uploads/20170621160411/marquee-pattern-3.svg'),linear-gradient(to right, #68bbf4, #6dcc9c);background-repeat: no-repeat;background-position: 100% 0;">
+    <header class="header text-white pt-8 pb-6" style="background-image: url('/assets/img/graph.svg'),linear-gradient(to right, #68bbf4, #6dcc9c);background-repeat: no-repeat;background-position: 50% 50%;background-size: auto;">
       <div class="container">
         <h1 class="display-4">Neo4j<span class="font-weight-bold">Mapper &lt;&gt;</span></h1>
         <p class="lead-2 mt-6">The easiest way to map cypher values onto your entity models.</p>
@@ -73,29 +69,64 @@
       !-->
       <section class="section">
         <div class="container">
-          <header class="section-header">
-            <small>Content</small>
-            <h2>How To Get Started</h2>
-            <hr>
-          </header>
-
-
           <div class="row">
             <div class="col-lg-8 mx-auto">
-              <p><strong>1. <a href="readme.html">Read me</a></strong> file is the staring point. It includes some guides and FAQs which answers most of your questions. So you should start reading now if you haven't.</p>
+              <h1>What is Neo4jMapper?</h1>
+              <p class="lead">It is A .NET Standard 2.0 library to simplify mapping of cypher values onto your entity models.</p>
+            </div>
+            <div class="col-lg-8 mx-auto">
+              <h1>What does it do?</h1>
+              <p class="lead">It uses <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>  mapper to
+                convert the records returned by the <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> into 
+                instances of your entities, and it provides utilities to convert those entities back into a format the 
+                Neo4j Driver can use to update the database.</p>
+              <h1>Show me some code?</h1>
+              <pre><code class="language-csharp">
+var cursor = await Session.RunAsync(@"
+  MATCH (person:Person {name: 'Cuba Gooding Jr.'})-[:ACTED_IN]->(movie:Movie)
+  WITH person, COLLECT(movie) AS movies
+  RETURN person, movies");
 
-              <p><strong>2. <a href="http://thetheme.io/thesaas/uikit/navbar.html" target="_blank">Navbar</a></strong> is a must have components for most of websites. Lean about navbars to create your own or use any of the available samples by visiting navbar documentation.</p>
+var actor = (await cursor.SingleAsync())
+  .Map((Person person, IEnumerable<Movie> movies) =>
+  {
+    person.MoviesActedIn = movies;
+    return person;
+  });
 
-              <p><strong>3. <a href="http://thetheme.io/thesaas/block/header.html" target="_blank">Header</a> or <a href="http://thetheme.io/thesaas/block/cover.html" target="_blank">Cover</a></strong> is the next step. Create or use one of the available headers for your internal pages or get inspired by our sample covers for your homepage.</p>
-
-              <p><strong>4. <a href="http://thetheme.io/thesaas/block/footer.html" target="_blank">Footer</a></strong> is a mandatory part of most websites. Get a sample footer, make it yours, and use it in all of the pages. Feel free to change the background color of footers using utility classes.</p>
-
-              <p><strong>5. <a href="http://thetheme.io/thesaas/block/" target="_blank">Blocks</a></strong> are the content here. We have hundreds of blocks, categorized in more than 20 pages. Simply pick what you need and change the text and image of the block and you're good to go.</p>
-
-              <p><strong>6. <a href="http://thetheme.io/thesaas/uikit/" target="_blank">UI Kit</a></strong> is the final destination for your creativity. If you need to create a custom block or get enough knowledge for modifying the existing blocks, this is the place.</p>
+Assert.AreEqual("Cuba Gooding Jr.", actor.name);
+Assert.AreEqual(1968, actor.born);
+Assert.AreEqual(4, actor.MoviesActedIn.Count());
+              </code></pre>
+              <p>The example cypher query returns a single <i>Person</i> node and a list of <i>Movie</i> nodes.
+              We <i>await</i> the response from the database request and collect the cypher values using the
+              <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> <span class="badge badge-secondary">SingleAsync</span> method.</p>
+              <p>We pass the results to the <span class="badge badge-secondary">Map</span> method which uses a <i>Func</i> to declare the expected input type
+              for each cypher value, in this case <i>Person</i> and <i>IEnumerable&lt;Movie&gt;</i>, and the final
+              output type, <i>Person</i>.</p>
+              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to the declared .NET types, and pass them to the Func 
+              to construct the final output.</p>
+              <h1>What else does it do?</h1>
+              <p>These are some of the features of Neo4jMapper:</p>
+              <ul>
+                <li>Simple Map API which extends Neo4j Driver's IRecord to greatly simplify the extraction and projection of cypher values
+                onto your entity models.</li>
+                <li>Works asynchronously via IStatementResultCursor methods or synchronously via IStatementResult.</li>
+                <li>Automatic mapping of node Ids to your entity models, and GetNode & SetNode helper methods to simplify writing CRUD
+                methods.</li>
+                <li>Custom converters to facilitate conversion between Neo4j Driver's temporal data types such as ZonedDateTime and .NET
+                CLR types such as DateTimeOffset.</li>
+                <li>Neo4jParameters wrapper and Dictionary extension methods to assist in creating parameter maps when performing cypher
+                updates.</li>
+                <li>Superior performance due to the use of best-in-class mapper ServiceStack.Text. Benchmarks show queries in excess of 4x
+                quicker than Neo4jClient.</li>
+                <li>Targets .NET Standard 2.0 for use in full .NET Framework or cross-platform .NET Core projects.</li>
+                <li>100% Code Coverage.</li>
+                <li>Benchmarks.</li>
+                <li>Examples.</li>
+              </ul>
             </div>
           </div>
-
 
         </div>
       </section>
@@ -139,6 +170,7 @@
 
     <!-- Scripts -->
     <script src="assets/js/page.min.js"></script>
+    <script src="assets/js/prism.js"></script>
 
   </body>
 </html>
