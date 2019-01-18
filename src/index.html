@@ -127,7 +127,7 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               simplest of applications. Each cypher value is returned as a <i>Dictionary&lt;string, object&gt;</i> and each property must be individually
               mapped from the dictionary onto your entity.
               </p>
-              <p>Neo4jMapper does all the hard work, and using optimised reflection methods, automatically maps values by convention, dealing with case mismatches,
+              <p>Neo4jMapper does all the hard work and using optimised reflection methods, automatically maps values by convention, dealing with case mismatches,
               handling collections, and ignoring properties when configured to do so.
               </p>
               <h2>What about Neo4jClient? It does the same thing, right?</h2>
@@ -141,7 +141,7 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               Instead, Neo4jMapper simply adds extension methods to convert the <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a> output into .NET types.
               </p>
               <p>Neo4jMapper also benefits from using <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>, a modern, high-performance mapper.
-              This results in a significant performance boost when performing cypher queries. Checkout the <a href="https://github.com/barnardos-au/Neo4jMapper/tree/master/src/Benchmarks">benchmarks</a> which compares the performance of the different libraries.
+              This results in a significant performance boost when performing cypher queries. Check out the <a href="https://github.com/barnardos-au/Neo4jMapper/tree/master/src/Benchmarks">benchmarks</a> which compare the performance of the different libraries.
               </p>
               <h1>Where do I download it?</h1>
               <div class="alert alert-warning" role="alert">
@@ -154,7 +154,7 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               <p>The easiest way to add Neo4jMapper to your .NET project is to use the NuGet Package Manager.</p>
               <h2>Using Visual Studio</h2>
               <p>From Visual Studio use the Nuget Package Manager to browse to the <a href="https://www.nuget.org/packages/Neo4jMapper/">Neo4jMapper</a> package and install it to your project.
-              Alternatively you can use the Package Manager Console:
+              Alternatively, you can use the Package Manager Console:
               </p>
               <pre><code class="language-powershell">Install-Package Neo4jMapper</code></pre>
               <h2>Using .NET Core Common Language Runtime (CoreCLR)</h2>
