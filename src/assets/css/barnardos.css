@@ -17,8 +17,11 @@ h6.barnardos-we-believe {
   color: black;
 }
 
-a.btn-barnardos-donate {
-  text-transform: none !important;
+a.btn-barnardos {
   background-color: #55b946 !important;
   border-color: #55b946 !important;
+}
+
+a.btn-barnardos-donate {
+  text-transform: none !important;
 }
