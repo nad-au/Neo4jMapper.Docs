@@ -144,6 +144,13 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               This results in a significant performance boost when performing cypher queries. Checkout the <a href="https://github.com/barnardos-au/Neo4jMapper/tree/master/src/Benchmarks">benchmarks</a> which compares the performance of the different libraries.
               </p>
               <h1>Where do I download it?</h1>
+              <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading">Pre-Release Note</h4>
+                <p>Neo4jMapper is dependent on <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a> and at the time of writing,
+                version 5.4.1 is used, which is a pre-release version and is only available from MyGet. Please see the ServiceStack <a href="http://docs.servicestack.net/myget">MyGet</a> page for information about how to 
+                add MyGet sources to your project.</p>
+                <p>This note will be removed once ServiceStack.Text is released to nuget.</p>
+              </div>
               <p>The easiest way to add Neo4jMapper to your .NET project is to use the NuGet Package Manager.</p>
               <h2>Using Visual Studio</h2>
               <p>From Visual Studio use the Nuget Package Manager to browse to the <a href="https://www.nuget.org/packages/Neo4jMapper/">Neo4jMapper</a> package and install it to your project.
