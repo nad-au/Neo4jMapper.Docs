@@ -81,8 +81,7 @@
               <pre><code class="language-csharp">
 var cursor = await Session.RunAsync(@"
   MATCH (person:Person {name: 'Cuba Gooding Jr.'})-[:ACTED_IN]->(movie:Movie)
-  WITH person, COLLECT(movie) AS movies
-  RETURN person, movies");
+  RETURN person, COLLECT(movie) AS movies");
 
 var actor = (await cursor.SingleAsync())
   .Map((Person person, IEnumerable<Movie> movies) =>
@@ -99,12 +98,8 @@ Assert.AreEqual(4, actor.MoviesActedIn.Count());
               We <i>await</i> the response from the database request and collect the cypher values using the
               <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> <span class="badge badge-secondary">SingleAsync</span> method.
               </p>
-              <p>We pass the results to the <span class="badge badge-secondary">Map</span> method which uses a <i>Func</i> delegate to declare the expected input type(s)
-              for the cypher values, in this case <i>Person</i> and <i>IEnumerable&lt;Movie&gt;</i>, and the final
-              output type, <i>Person</i>.
-              </p>
-              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to the declared .NET types, and pass them as input parameters
-              to the <i>Func</i> in order to construct the output.
+              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to .NET types declared in the <i>Func</i> input parameters,
+              and you can use these for mapping onto an instance of the declared output type.
               </p>
               <h1>What else does it do?</h1>
               <p>These are some of the features of Neo4jMapper:</p>
