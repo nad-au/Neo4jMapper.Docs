@@ -19,7 +19,8 @@
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#nav-scrollspy" data-offset="100" data-aos-easing="ease" data-aos-duration="1500"
+    data-aos-delay="0" class="body-scrolled navbar-scrolled header-scrolled">
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light navbar-stick-dark" data-navbar="sticky">
@@ -71,15 +72,172 @@
       <section class="section">
         <div class="container">
           <div class="row mb-8">
-            <div class="col-lg-8 mx-auto">
+            <div class="col-md-7 col-xl-8 mr-md-auto">
               <h1>Usage Guide</h1>
-              <p>Coming real soon...</p>
+              <p>The following describes the features and APIs of Neo4jMapper. It does not describe in detail how to install, configure or use Neo4j.
+              For more inforation about Neo4j, please consult the Neo4j <a href="https://neo4j.com/docs/">documentation</a>.
+              </p>
+              <p>Neo4jMapper uses <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> for all database connections.
+              Neo4jMapper has a dependency on this driver, and installs the driver when the Neo4jMapper <a href="https://www.nuget.org/packages/Neo4jMapper/">nuget</a> package 
+              is added to your project. You should consult the driver <a href="https://neo4j.com/docs/driver-manual/current/">documentation</a> for instructions on
+              how to connect to the database and perform cypher queries.
+              </p>
+              <h2 id="getting-started">Getting Started</h2>
+              <p>Ensure you have a working Neo4j database which can be downloaded from <a href="https://neo4j.com/download/">here</a> and that
+              you can connect to Neo4j's browser console at <a href="http://localhost:7474/browser/">http://localhost:7474/browser/</a>.
+              </p>
+              <p>Create a new C# project and install Neo4jMapper as detailed <a href="download.html">here</a> and test the database connection
+              using the <i>Hello World</i> example described in the Neo4j <a href="https://neo4j.com/docs/driver-manual/current/get-started/">docs</a>.  
+              </p>
+              <p>Once you've connected to the database and can execute queries in code, you're ready to start writing applications using Neo4jMapper.</p>
+              <h2 id="running-examples">Running Examples</h2>
+              <p>The examples given through this guide use the movies database which can be accessed from the Neo4j <a href="http://localhost:7474/browser/">browser</a> console.</p>
+              <p>From the browser execute the following and step through the pages and run the Create script.</p>
+              <pre><code class="language-none">
+:play movie-graph
+              </code></pre>
+              <h2 id="working-with-neo4j-driver">Working with Neo4j Driver output</h2>
+              <p><a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> allows you to run queries synchronously or asynchronously, both of which provide slightly different APIs due to the way
+              .NET Framwork deals with enumerated results.
+              </p>
+              <h3>Synchronous Operations</h3>
+              <pre><code class="language-csharp">
+using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+{
+  using (var session = driver.Session())
+  {
+    var result = session.Run(@"
+      MATCH (person:Person)
+      RETURN person
+      LIMIT 1");
+
+    foreach (var record in result)
+    {
+      Console.WriteLine(record.Values.Dump());
+    }
+  }
+}
+              </code></pre>
+              <p>In this example the <span class="badge badge-secondary">Run</span> method returns an <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResult.cs">IStatementResult</a>  object 
+              which provides us access to the records via the <i>IEnumerable&lt;IRecord&gt;</i>. As we enumerate IStatementResult, each <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a>
+              provides us access to the record's query values, in this case, the <i>Person</i> node. The query values are returned as an <i>IDictionary&lt;string, object&gt;</i> via the <span class="badge badge-secondary">Values</span> property.
+              </p>
+              <p>When we run this example, it outputs the query values to the console using <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a> <span class="badge badge-secondary">Dump</span> method, which provides a handy json view of any .NET object or collection.
+              </p>
+              <pre><code class="language-json">
+{
+	person: 
+	{
+		__type: "Neo4j.Driver.Internal.Types.Node, Neo4j.Driver",
+		Id: 1,
+		Labels: 
+		[
+			Person
+		],
+		Properties: 
+		[
+			{
+				Key: name,
+				Value: Keanu Reeves
+			},
+			{
+				Key: born,
+				Value: 1964
+			}
+		]
+	}
+}
+              </code></pre>
+              <p>We can see that from the dictionary, one key/value pair was returned. The key 'person' matches the identifier name used in the query,
+              and value is an object of type <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/Internal/Types/Node.cs">Node</a>.
+              When reading the Node's properties, we can see that it provides another dictionary: <i>IReadOnlyDictionary&lt;string, object&gt;</i> via <span class="badge badge-secondary">Properties</span>.
+              These are the actual node's property values. In this example they are returning the 'name' and 'born' values of the actor 'Keanu Reeves'.
+              </p>
+              <h3>Asynchronous Operations</h3>
+              <pre><code class="language-csharp">
+using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+{
+  using (var session = driver.Session())
+  {
+    var cursor = await session.RunAsync(@"
+      MATCH (movie:Movie)
+      RETURN movie
+      LIMIT 1");
+
+    foreach (var record in (await cursor.ToListAsync()))
+    {
+      var output = record.Values.Dump();
+      Console.WriteLine(output);
+    }
+  }
+}
+              </code></pre>
+              <p>In this example the awaitable <span class="badge badge-secondary">RunAsync</span> method returns an <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResultCursor.cs">IStatementResultCursor</a>
+                object which provides us access to the records via the awaitable <span class="badge badge-secondary">ToListAsync</span> method, which returns us a <i>List&lt;IRecord&gt;</i>.
+              </p>
+              <div class="alert alert-info" role="alert">
+                <p>You can see that IStatementResultCursor doesn't implement IEnumerable because yielding results from an enumerator is
+                possible only synchronously in C# 7.</p>
+              </div>
+              <p>As before, when we enumerate the list, each IRecord provides us access to the record's query values, in this case, the <i>Movie</i> node. As before, the query values are returned as an <i>IDictionary&lt;string, object&gt;</i> via the <span class="badge badge-secondary">Values</span>
+              property.
+              </p>
+              <pre><code class="language-json">
+{
+	movie: 
+	{
+		__type: "Neo4j.Driver.Internal.Types.Node, Neo4j.Driver",
+		Id: 0,
+		Labels: 
+		[
+			Movie
+		],
+		Properties: 
+		[
+			{
+				Key: title,
+				Value: The Matrix
+			},
+			{
+				Key: tagline,
+				Value: Welcome to the Real World
+			},
+			{
+				Key: released,
+				Value: 1999
+			}
+		]
+	}
+}                
+              </code></pre>
+              <p>We can see in the console output that one key/value pair was returned. The key 'movie' matches the identifier name
+                used in the query, and value is the Node object and the Properties returns the node's property values. In this example 
+                they are returning the 'title', 'tagline' and 'released' values of 'The Matrix' movie.
+              </p>
+              <h2 id="introducing-neo4jmapper">Introducing Neo4jMapper</h2>
+              <p>Now you can imagine, having to work directly with IStatementResult, IStatementResultCursor and IRecord would be tedious. Trying to extract
+                values from these objects and assigning them to your models would result in a lot of mapping code.
+              </p>
               <hr>
               <p class="lead">This software is developed and maintained by the Barnardos Australia software development <a href="https://github.com/barnardos-au">team</a>,
                 as a voluntary effort. If you find this software
                 useful, please consider making a donation to Barnardos Australia using the links below.<br> Thank you.
               </p>
             </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4 col-xl-3 d-none d-md-block">
+              <aside class="sidebar sidebar-sticky stick" style="width: 255px;">
+                <h6 class="sidebar-title">Contents</h6>
+                <nav id="nav-scrollspy" class="nav flex-column">
+                  <a class="nav-link" href="#getting-started">Getting Started</a>
+                  <a class="nav-link" href="#running-examples">Running Examples</a>
+                  <a class="nav-link" href="#working-with-neo4j-driver">Working with Neo4j Driver output</a>
+                  <a class="nav-link" href="#introducing-neo4jmapper">Introducing Neo4jMapper</a>
+                </nav>
+              </aside>
+            </div>
+
           </div>
           <div id="barnardos-donate" class="row">
             <div class="col-lg-8 mx-auto">
