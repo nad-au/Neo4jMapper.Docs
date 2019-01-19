@@ -86,7 +86,7 @@ var cursor = await Session.RunAsync(@"
   RETURN person, COLLECT(movie) AS movies");
 
 var actor = (await cursor.SingleAsync())
-  .Map((Person person, IEnumerable<Movie> movies) =>
+  .Map((Person person, IEnumerable&lt;Movie&gt; movies) =>
   {
     person.MoviesActedIn = movies;
     return person;
