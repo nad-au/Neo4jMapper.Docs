@@ -248,7 +248,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
                 <p>We'll use async examples from this point forward as there's no difference in the way Neo4jMapper works whether 
                   you're writing synchronous or asynchronous code.
                 </p>
-                <p>For brevity, we'll also drop the driver initialization and session creation steps.</p>
+                <p>For brevity, we'll also drop the driver initialization, session creation and console output steps.</p>
               </div>
               <h3 id="map-method">Map&lt;TReturn&gt; method</h3>
               <p>So lets re-visit the first example and use the <span class="badge badge-secondary">Map&lt;TReturn&gt;</span> 
@@ -261,9 +261,6 @@ var cursor = await session.RunAsync(@"
   LIMIT 1");
 
 var person = (await cursor.SingleAsync()).Map&lt;Person&gt;();
-
-var output = person.Dump();
-Console.WriteLine(output);
               </code></pre>
               <p>In this example we're using the Neo4j Driver's <span class="badge badge-secondary">SingleAsync</span> extension 
                 method as we're expecting only 1 result, so a single <i>IReturn</i> is given. Our 
@@ -291,9 +288,6 @@ var actorWithMovie = (await cursor.SingleAsync()).Map((Person actor, Movie first
   Actor = actor,
   FirstMovie = firstMovie
 });
-
-var output = actorWithMovie.Dump();
-Console.WriteLine(output);
               </code></pre>
               <p>In this example we're using the <span class="badge badge-secondary">Map&lt;TValue1, TValue2, TReturn&gt;</span> 
                 method which requries you to declare the two input types we're expecting from the cypher values, and the return type.
@@ -341,9 +335,6 @@ var actorWithMovies = (await cursor.ToListAsync()).Map((Person actor, Movie newe
   Actor = actor,
   NewestMovie = newestMovie
 }).ToList();
-
-var output = actorWithMovies.Dump();
-Console.WriteLine(output);
               </code></pre>
               <p>Because we're expecting to receive a list of results, this time we'll use the Neo4j Driver 
                 <span class="badge badge-secondary">ToListAsync</span> method to return a list of <I>IRecord</I> objects. To convert these
@@ -386,7 +377,7 @@ Console.WriteLine(output);
                 cypher statement to return up to 16 cypher values or fields. Each cypher value can be one of the supported .NET types
                 which includes:
                 <ul>
-                  <li>CLR data types such as <i>bool</i>, <i>int</i>, <i>string</i></li>
+                  <li>CLR data types such as <i>bool</i>, <i>int</i>, <i>string</i> that are natively supported by <a href="https://github.com/neo4j/neo4j-dotnet-driver#value-types">Neo4j</a>.</li>
                   <li>Custom types such as <i>Person</i>, <i>Movie</i> etc.</li>
                   <li>Collection types such as <i>IEnumerable&lt;T&gt;</i>, <i>List&lt;T&gt;</i></li>
                 </ul>
@@ -423,9 +414,6 @@ var actorWithMovies = (await cursor.SingleAsync())
       HasMovies = hasMovies,
       Movies = movies
     });
-
-var output = actorWithMovies.Dump();
-Console.WriteLine(output);
               </code></pre>
               <p>As we can see, the <i>Func</i> input parameters exactly match, and are in the same order as the <i>RETURN</i> statement
                 cypher value list.
@@ -465,6 +453,292 @@ Console.WriteLine(output);
 	]
 }
               </code></pre>
+              <h3 id="unsupported-types">Unsupported .NET types</h3>
+              <p>Practically all .NET clr types and custom types are supported, however there are a few exceptions. Neo4j v3.4 introduced new
+                temporal data types for working with date and time values, and Neo4j Driver introduced new .NET types to encapsulate these
+                values, such as <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/Types/ZonedDateTime.cs">ZonedDateTime</a>.
+                Because of this, it is not directly possible to convert between <i>ZonedDateTime</i> and the .NET clr equivalent of <i>DateTimeOffset</i>
+                when mapping custom types.
+              </p>
+              <pre><code class="language-csharp">
+class Example7CustomType
+{
+  public DateTimeOffset TemporalValue { get; set; }
+}
+
+var cursor = await session.RunAsync(@"RETURN { temporalValue: datetime() } as map");
+
+var customType = (await cursor.SingleAsync()).Map&lt;Example7CustomType&gt;();
+              </code></pre>
+              <p>The above code fails cause the mapper is unable to automatically convert the incoming cypher <i>DateTime</i> value which
+              is returned as a <i>ZonedDateTime</i> to the equivalent .NET clr <i>DateTimeOffset</i>. The solution instead is to return
+              the ZonedDateTime as-is.</p>
+              <pre><code class="language-csharp">
+class Example8CustomType
+{
+  public ZonedDateTime TemporalValue { get; set; }
+}
+
+var cursor = await session.RunAsync(@"RETURN { temporalValue: datetime() } as map");
+
+var customType = (await cursor.SingleAsync()).Map&lt;Example8CustomType&gt;();
+              </code></pre>
+              <p>This works correctly and maps the native Neo4j Driver type.</p>
+              <pre><code class="language-json">
+{
+	TemporalValue: 
+	{
+		Year: 2019,
+		Month: 1,
+		Day: 20,
+		Hour: 5,
+		Minute: 3,
+		Second: 29,
+		Nanosecond: 575000000,
+		Zone: 
+		{
+			__type: "Neo4j.Driver.V1.ZoneOffset, Neo4j.Driver",
+			OffsetSeconds: 0,
+			Offset: PT0S
+		},
+		OffsetSeconds: 0
+	}
+}
+              </code></pre>
+              <div class="alert alert-info" role="alert">
+                <p>There is a work-around using Custom Type Converters explained later in this guide.
+                </p>
+              </div>
+              <h2 id="persisting-data">Persisting Data</h2>
+              <p>So far we've only dealt with querying for cypher values. However, in any non-trivial application we would want to create or
+                update some records. The way we'd achieve this is through the use of <a href="https://neo4j.com/docs/cypher-manual/current/syntax/parameters/">parameters</a>.
+              </p>
+              <p>Similar to the way Neo4j Driver returns values as a dictionary, parameters are also constructed using a <i>Dictionary&lt;string, object&gt;</i>.
+                In fact Neo4j Driver already has good support for parameters, as long as we are passing simple values.
+              </p>
+              <p>We'll add an <a href="https://www.imdb.com/">IMDB</a> number to an existing movie.</p>
+              <pre><code class="language-csharp">
+class IMDBMovie : Movie
+{
+  public string imdb { get; set; }
+}
+
+var parameters = new Dictionary&lt;string, object&gt;
+{
+  {"imdb", "tt0133093"}
+};
+
+var cursor = await session.RunAsync(@"
+  MATCH (movie:Movie {title: 'The Matrix'})
+  SET movie.imdb = $imdb
+  RETURN movie", parameters);
+
+var updatedMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+              </code></pre>
+              <p>The newly added imdb property is now returned in the model.</p>
+              <pre><code class="language-json">
+{
+	imdb: tt0133093,
+	title: The Matrix,
+	tagline: Welcome to the Real World,
+	released: 1999
+}
+              </code></pre>
+              <h3 id="neo4jparameters">Neo4jParameters Object</h3>
+              <p>For convenience, Neo4jMapper provides a handy <i>Neo4jParameters</i> object, which is just subclasses <i>Dictionary&lt;string, object&gt;</i>
+                but arguably makes the code more readable.
+              </p>
+              <pre><code class="language-csharp">
+var parameters = new Neo4jParameters
+{
+  {"titleSearch", "Top Gun"},
+  {"imdb", "tt0092099"}
+};
+
+var cursor = await session.RunAsync(@"
+  MATCH (movie:Movie {title: $titleSearch})
+  SET movie.imdb = $imdb
+  RETURN movie", parameters);
+
+var updatedMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+              </code></pre>
+              <h3 id="parameter-maps">Parameter Maps</h3>
+              <p>Setting single values is straightforward enough but what if you wanted to create or update an entire record? For instance,
+                creating a movie? For this, Neo4jMapper provides an an extension method <span class="badge badge-secondary">ToParameter</span>
+                which takes a model and converts the public properties to key/value pairs, and creates a map using the given key.
+              </p>
+              <p>We'll create a new movie object and convert it to a parameter map.</p>
+              <pre><code class="language-csharp">
+var movie = new IMDBMovie
+{
+  imdb = "tt0110912",
+  released = 1994,
+  tagline =
+  "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of
+    violence and redemption.",
+  title = "Pulp Fiction"
+};
+
+var map = movie.ToParameter("newMovie");
+              </code></pre>
+              <p>Which returns a map with a key 'newMovie'.</p>
+              <pre><code class="language-json">
+{
+	Key: newMovie,
+	Value: 
+	[
+		{
+			Key: imdb,
+			Value: tt0110912
+		},
+		{
+			Key: title,
+			Value: Pulp Fiction
+		},
+		{
+			Key: tagline,
+			Value: "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of violence and redemption."
+		},
+		{
+			Key: released,
+			Value: 1994
+		}
+	]
+}
+              </code></pre>
+              <h3 id="persisting-models">Persisting Models</h3>
+              <p>Now that we can create parameter maps, we can use this in one of our fluent extension methods <span class="badge badge-secondary">WithEntity</span> 
+                which takes an entity and converts it to a map.
+              </p>
+              <p>We'll now go ahead and create and persist a new movie.</p>
+              <pre><code class="language-csharp">
+var movie = new IMDBMovie
+{
+  imdb = "tt0110912",
+  released = 1994,
+  tagline =
+    "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of
+    violence and redemption.",
+  title = "Pulp Fiction"
+};
+
+var parameters = new Neo4jParameters()
+  .WithEntity(movie, "newMovie");
+
+var cursor = await session.RunAsync(@"
+  CREATE (movie:Movie $newMovie)
+  RETURN movie", parameters);
+
+var createdMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+              </code></pre>
+              <p>Which returns us our new movie.</p>
+              <pre><code class="language-json">
+{
+  imdb: tt0110912,
+  title: Pulp Fiction,
+  tagline: "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales
+  of violence and redemption.",
+  released: 1994
+}
+              </code></pre>
+              <h3 id="fluent-extensions">Parameters Fluent Extensions</h3>
+              <p>Neo4jMapper provides a number of extension methods which help build up complex parameter sets. Each extension method takes
+                the dictionary, adds one or more parameters, and returns the dictionary to allow chaining multiple methods.
+                <table class="table table-striped">
+                  <tr>
+                    <th>Method Name</th>
+                    <th>Description</th>
+                  </tr>
+                  <tr>
+                    <td>WithEntity</td>
+                    <td>Creates a parameter map from a given entity model</td>
+                  </tr>
+                  <tr>
+                    <td>WithEntities</td>
+                    <td>Creates an array of parameter maps from a collection given entity models</td>
+                  </tr>
+                  <tr>
+                    <td>WithMap</td>
+                    <td>Adds an existing map to the dictionary</td>
+                  </tr>
+                  <tr>
+                    <td>WithMaps</td>
+                    <td>Adds an existing map collection to the dictionary</td>
+                  </tr>
+                  <tr>
+                    <td>WithParams</td>
+                    <td>Builds a parameter map from anonymous type and infers keys from property names</td>
+                  </tr>
+                </table>
+              </p>
+              <h3 id="parameters-limitations">Limitations</h3>
+              <p>When using <span class="badge badge-secondary">ToParameter</span> directly, or via 
+                <span class="badge badge-secondary">WithEntity</span> method, the converter will only create valid key/value pairs (maps)
+                from the root object properties. Any nested types, whether objects or collections, will not be converted correctly,
+                resulting in exceptions thrown when trying to persist data. For this reason it is advisable to mark any nested properties
+                with <i>IgnoreDataMemberAttribute</i> to ensure they are ignored by the converter.
+              </p>
+              <p>The following provides an example how to create a complex parameter list with ignored properties.</p>
+              <pre><code class="language-csharp">
+public class Person
+{
+  public string name { get; set; }
+  public int born { get; set; }
+
+  [IgnoreDataMember]
+  public List&lt;Movie&gt; MoviesActedIn { get; set; }
+}
+
+var actorWithMovies = new Person
+{
+  name = "Samuel L. Jackson",
+  born = 1948,
+  MoviesActedIn = new List&lt;Movie&gt;
+  {
+    new Movie
+    {
+      released = 1994,
+      tagline =
+        "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of
+        violence and redemption.",
+      title = "Pulp Fiction"
+    },
+    new Movie
+    {
+      released = 1996,
+      tagline =
+        "A woman suffering from amnesia begins to recover her memories after trouble from her past finds her again.",
+      title = "The Long Kiss Goodnight"
+    },
+    new Movie
+    {
+      released = 2000,
+      tagline =
+        "A man learns something extraordinary about himself after a devastating accident.",
+      title = "Unbreakable"
+    }
+  }
+};
+
+var parameters = new Neo4jParameters()
+  .WithEntity(actorWithMovies, "newActor")
+  .WithEntities(actorWithMovies.MoviesActedIn, "newMovies");
+
+await session.RunAsync(@"
+  CREATE (person:Person $newActor)
+  WITH person
+  UNWIND $newMovies AS newMovie
+  CREATE (person)-[:ACTED_IN]->(movie:Movie)
+  SET movie = newMovie", parameters);
+              </code></pre>
+              <p>Here we can see that when we call <span class="badge badge-secondary">WithEntity</span> and pass our person model,
+                (actorWithMovies) the <i>MoviesActedIn</i> property is ignored when we create the map. We create a second map (or collection
+                of maps) when we call <span class="badge badge-secondary">WithEntities</span> and pass our movie collection. This is 
+                <i>UNWIND</i> in cypher to extract the map from the list when we create each movie node.
+              </p>
+              <h2 id="working-with-entities">Working with Entities</h2>
+              <p></p>
+  
               <hr>
               <p class="lead">This software is developed and maintained by the Barnardos Australia software development <a href="https://github.com/barnardos-au">team</a>,
                 as a voluntary effort. If you find this software
@@ -485,6 +759,14 @@ Console.WriteLine(output);
                   <a class="nav-link nav-link-child" href="#return-multiple-values">Returning multiple cypher values</a>
                   <a class="nav-link nav-link-child" href="#returning-lists">Returning lists</a>
                   <a class="nav-link nav-link-child" href="#supported-types">Supported .NET types</a>
+                  <a class="nav-link nav-link-child" href="#unsupported-types">Unsupported .NET types</a>
+                  <a class="nav-link" href="#persisting-data">Persisting Data</a>
+                  <a class="nav-link nav-link-child" href="#neo4jparameters">Neo4jParameters Object</a>
+                  <a class="nav-link nav-link-child" href="#parameter-maps">Parameter Maps</a>
+                  <a class="nav-link nav-link-child" href="#persisting-models">Persisting Models</a>
+                  <a class="nav-link nav-link-child" href="#fluent-extensions">Parameters Fluent Extensions</a>
+                  <a class="nav-link nav-link-child" href="#parameters-limitations">Limitations</a>
+                  <a class="nav-link" href="#working-with-entities">Working with Entities</a>
                 </nav>
               </aside>
             </div>
