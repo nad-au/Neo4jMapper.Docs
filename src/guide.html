@@ -235,7 +235,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
                 used in the query, and value is the Node object and the Properties returns the node's property values. In this
                 example they are returning the 'title', 'tagline' and 'released' values of 'The Matrix' movie.
               </p>
-              <h2 id="introducing-neo4jmapper">Introducing Neo4jMapper</h2>
+              <h2 id="mapping-records">Mapping Records</h2>
               <p>Now you can imagine, having to work directly with IStatementResult, IStatementResultCursor and IRecord would be
                 tedious. Trying to extract values from these objects and assigning them to your models would result in a lot of 
                 repetitive mapping code.
@@ -506,7 +506,8 @@ var customType = (await cursor.SingleAsync()).Map&lt;Example8CustomType&gt;();
 }
               </code></pre>
               <div class="alert alert-info" role="alert">
-                <p>There is a work-around using Custom Type Converters explained later in this guide.
+                <p>There is a work-around using <a href="#custom-type-converters">Custom</a> Type Converters explained 
+                  <a href="#custom-type-converters">later</a> in this guide.
                 </p>
               </div>
               <h2 id="persisting-data">Persisting Data</h2>
@@ -623,7 +624,7 @@ var movie = new IMDBMovie
 };
 
 var parameters = new Neo4jParameters()
-  .WithEntity(movie, "newMovie");
+  .WithEntity("newMovie", movie);
 
 var cursor = await session.RunAsync(@"
   CREATE (movie:Movie $newMovie)
@@ -668,6 +669,10 @@ var createdMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
                   <tr>
                     <td>WithParams</td>
                     <td>Builds a parameter map from anonymous type and infers keys from property names</td>
+                  </tr>
+                  <tr>
+                    <td>WithValue</td>
+                    <td>Adds a single value to the dictionary</td>
                   </tr>
                 </table>
               </p>
@@ -721,8 +726,8 @@ var actorWithMovies = new Person
 };
 
 var parameters = new Neo4jParameters()
-  .WithEntity(actorWithMovies, "newActor")
-  .WithEntities(actorWithMovies.MoviesActedIn, "newMovies");
+  .WithEntity("newActor", actorWithMovies)
+  .WithEntities("newMovies", actorWithMovies.MoviesActedIn);
 
 await session.RunAsync(@"
   CREATE (person:Person $newActor)
@@ -737,9 +742,183 @@ await session.RunAsync(@"
                 <i>UNWIND</i> in cypher to extract the map from the list when we create each movie node.
               </p>
               <h2 id="working-with-entities">Working with Entities</h2>
-              <p></p>
-  
+              <p>In a typical enterprise application we would probably need to create, update, or even delete some records. In our movies
+                examples, we may need to create a new movie and link it to an actor, or we may need to make a change to an existing movie,
+                perhaps to add the IMDB number. In these cases we'll need to access a node directly so that we can perform some change,
+                or remove it, or modify its relationships.
+              </p>
+              <p>So far we've accessed individual records by performing a <i>MATCH</i> on some property. However, without using unique
+                constraints, we can't assume there is only one record with the given property value. In cases like this, we may consider
+                accessing the node by its id.
+              </p>
+              <p>Neo4jMapper provides an automatic way of mapping the node's id onto your model - we'll call it an entity from here - 
+                so that we can make some changes to the entity in the application, and when performing updates, we can <i>MATCH</i>
+                by the node id and be sure we're updating the same node we fetched.
+              </p>
+              <h3>NodeIdAttribute</h3>
+              <p>Neo4jMapper provides a <i>NodeIdAttribute</i> which you can use to decorate a property in your entity with a type <i>long</i>.
+                When a node is fetched and mapped, the node's id is automatically mapped to this property.
+              </p>
+              <p>In this example we'll query a list of movies and then add an IMDB number to 'The Matrix' movie and update it by its node id.
+              </p>
+              <pre><code class="language-csharp">
+public class MovieEntity
+{
+  [NodeId]
+  [IgnoreDataMember]
+  public long id { get; set; }
+
+  public string title { get; set; }
+  public string tagline { get; set; }
+  public int released { get; set; }
+
+  public string imdb { get; set; }
+}
+
+var cursor = await session.RunAsync(@"
+  MATCH (movie:Movie {released: $year})
+  RETURN movie", new { year = 1999 });
+
+var movies = (await cursor.ToListAsync()).Map&lt;MovieEntity&gt;();
+
+var matrix = movies.Single(p => p.title == "The Matrix");
+matrix.imdb = "tt0133093";
+
+var updateParams = new Neo4jParameters()
+  .WithEntity("updatedMovie", matrix)
+  .WithValue("nodeId", matrix.id);
+
+cursor = await session.RunAsync(@"
+  MATCH (movie)
+  WHERE id(movie) = $nodeId
+  SET movie = $updatedMovie
+  RETURN movie", updateParams);
+
+var updatedMovie = (await cursor.SingleAsync()).Map&lt;MovieEntity&gt;();
+              </code></pre>
+              <p>Notice that we've also added the <i>IgnoreDataMemberAttribute</i> to the <i>id</i> property, because when we convert
+                the entity back into a map using <span class="badge badge-secondary">WithEntity</span> we don't want the id being included
+                in the map, otherwise it will get persisted as another property in the node. A node's id is not a property of a node.
+              </p>
+              <pre><code class="language-json">
+{
+	title: The Matrix,
+	tagline: Welcome to the Real World,
+	released: 1999,
+	imdb: tt0133093
+}
+              </code></pre>
+              <h3>Session Extension methods</h3>
+              <p>Now we have a way to map the node's id to an entity model and update the node by its id, we can simplify this further
+                by using some basic <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> extension methods which
+                fetch and update nodes by their id. Neo4jMapper provides the following methods.
+                <table class="table table-striped">
+                  <tr>
+                    <th>Method Name</th>
+                    <th>Description</th>
+                  </tr>
+                  <tr>
+                    <td>GetNode</td>
+                    <td>Gets a node by the given node id and map to an entity model</td>
+                  </tr>
+                  <tr>
+                    <td>GetNodeAsync</td>
+                    <td>Gets a node by the given node id and map to an entity model</td>
+                  </tr>
+                  <tr>
+                    <td>SetNode</td>
+                    <td>Sets (overwrites) a node by the given node id</td>
+                  </tr>
+                  <tr>
+                    <td>SetNodeAsync</td>
+                    <td>Sets (overwrites) a node by the given node id</td>
+                  </tr>
+                </table>
+              </p>
+              <p>We'll repeat the above example using the extension methods.</p>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (movie:Movie {released: $year})
+  RETURN movie", new { year = 1999 });
+
+var movies = (await cursor.ToListAsync()).Map&lt;MovieEntity&gt;();
+
+var matrix = movies.Single(p => p.title == "The Matrix");
+matrix.imdb = "tt0133093";
+
+await session.SetNodeAsync(matrix);
+
+var updatedMovie = await session.GetNodeAsync&lt;MovieEntity&gt;(matrix.id);
+              </code></pre>
+              <h2 id="advanced-mapping">Advanced Mapping</h2>
+              <p>Under normal circumstances, the <span class="badge badge-secondary">Map</span> and 
+                <span class="badge badge-secondary">WithEntity</span> methods covers most mapping requirements, however on occasion you may need
+                more control over mapping, and for this we can use <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>
+                directly. The <span class="badge badge-secondary">Map</span> method, via <i>ValueMapper</i> class calls ServiceStack's 
+                <span class="badge badge-secondary">FromObjectDictionary</span> method, and <span class="badge badge-secondary">WithEntity</span>
+                and other extension methods call ServiceStack's <span class="badge badge-secondary">ToObjectDictionary</span> method.
+              </p>
+              <p>In addition to these methods, <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a> provides an array
+                of helpers, utilities and extension methods to cover practically all mapping & conversion use-cases, as well as JSON and CSV
+                serializers.
+              </p>
+              <p>One method in particular, <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> may be useful when mapping between entity 
+                models and viewmodels. It works similar to <a href="https://automapper.org/">AutoMapper</a> in that it copies all matching object parameters.
+                And as with all other mapping methods, <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> uses optimised reflection-based mapping to provide the highest performance.
+              </p>
+              <h3 id="custom-type-converters">Custom Type Converters</h3>
+              <p>As mentioned earlier, one of the limitations of Neo4jMapper is its inability to directly map between Neo4j Driver's new
+                temporal types such as <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/Types/ZonedDateTime.cs">ZonedDateTime</a> 
+                and <i>DateTimeOffset</i>, for example.
+              </p>
+              <p>For this we can use Custom Type Converters. This is a new ServiceStack.Text feature which enables the developer to write a converter
+                that takes any .NET type and converts it to a different .NET type. These converters are registered in ServiceStack.Text, and when a mapping
+                operation detects source & target types defined in the converter, then this converter is invoked.
+              </p>
+              <p>Neo4jMapper provides type converters for mapping between most of the new temporal types, and .NET clr equivalents. To register all custom
+                type converters simply call <span class="badge badge-secondary">Neo4jMapperConfig.RegisterTypeConverters</span> method. Alternatively,
+                individual registrations are possible, or you can even register your own.
+                <table class="table table-striped">
+                  <tr>
+                    <th>Method Name</th>
+                    <th>Description</th>
+                  </tr>
+                  <tr>
+                    <td>RegisterLocalDateToDateTimeConverter</td>
+                    <td>Converts between LocalDate and DateTime</td>
+                  </tr>
+                  <tr>
+                    <td>RegisterLocalTimeToTimeSpanConverter</td>
+                    <td>Converts between LocalTime and TimeSpan</td>
+                  </tr>
+                  <tr>
+                    <td>RegisterZonedDateTimeToDateTimeOffsetConverter</td>
+                    <td>Converts between ZonedDateTime and DateTimeOffset</td>
+                  </tr>
+                  <tr>
+                    <td>RegisterLocalDateTimeToDateTimeConverter</td>
+                    <td>Converts between LocalDateTime and DateTime</td>
+                  </tr>
+                </table>
+              </p>
+              <p>All of these use ServiceStack.Text <span class="badge badge-secondary">AutoMappingUtils.RegisterConverter</span> to easily
+                configure and register your own converters.
+              </p>
+              <h3>Limitations</h3>
+              <p>Although the supplied type converters are bi-directional (each registration method registers two converters to convert each way) 
+                conversion does not work when mapping entity models back to parameters. The reason for this is that for the converter to work,
+                the source and target types must both be known. When a node is mapped to an entity, we can read the source type from the
+                dictionary, and we know the target type defined in the entity model, then conversion works. But when we convert an entity model 
+                back to a parameter map, we only know source type. We cannot infer the target type (the node's property) from anywhere.
+              </p>
+              <p>For this reason, we suggest wherever possible to use Neo4j Driver temporal types instead of .NET clr types. If this is not
+                possible then define the entity model using the temporal type, and create an equivalent 
+                <a href="https://en.wikipedia.org/wiki/Data_transfer_object">DTO</a> using the .NET clr type, and use ServiceStack.Text
+                <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> to bi-directionally convert between the entity and DTO.
+                That way the custom type converters will work correctly.
+              </p>
               <hr>
+              <h5>About Neo4jMapper</h5>
               <p class="lead">This software is developed and maintained by the Barnardos Australia software development <a href="https://github.com/barnardos-au">team</a>,
                 as a voluntary effort. If you find this software
                 useful, please consider making a donation to Barnardos Australia using the links below.<br> Thank you.
@@ -754,19 +933,10 @@ await session.RunAsync(@"
                   <a class="nav-link" href="#getting-started">Getting Started</a>
                   <a class="nav-link" href="#running-examples">Running Examples</a>
                   <a class="nav-link" href="#working-with-neo4j-driver">Working with Neo4j Driver output</a>
-                  <a class="nav-link" href="#introducing-neo4jmapper">Introducing Neo4jMapper</a>
-                  <a class="nav-link nav-link-child" href="#map-method">Map&lt;TReturn&gt; method</a>
-                  <a class="nav-link nav-link-child" href="#return-multiple-values">Returning multiple cypher values</a>
-                  <a class="nav-link nav-link-child" href="#returning-lists">Returning lists</a>
-                  <a class="nav-link nav-link-child" href="#supported-types">Supported .NET types</a>
-                  <a class="nav-link nav-link-child" href="#unsupported-types">Unsupported .NET types</a>
+                  <a class="nav-link" href="#mapping-records">Mapping Records</a>
                   <a class="nav-link" href="#persisting-data">Persisting Data</a>
-                  <a class="nav-link nav-link-child" href="#neo4jparameters">Neo4jParameters Object</a>
-                  <a class="nav-link nav-link-child" href="#parameter-maps">Parameter Maps</a>
-                  <a class="nav-link nav-link-child" href="#persisting-models">Persisting Models</a>
-                  <a class="nav-link nav-link-child" href="#fluent-extensions">Parameters Fluent Extensions</a>
-                  <a class="nav-link nav-link-child" href="#parameters-limitations">Limitations</a>
                   <a class="nav-link" href="#working-with-entities">Working with Entities</a>
+                  <a class="nav-link" href="#advanced-mapping">Advanced Mapping</a>
                 </nav>
               </aside>
             </div>
@@ -803,12 +973,6 @@ await session.RunAsync(@"
               <a class="social-twitter" href="https://www.facebook.com/BarnardosAustralia"><i class="fa fa-facebook"></i></a>
               <a class="social-twitter" href="https://instagram.com/barnardos_au/"><i class="fa fa-instagram"></i></a>
               <a class="social-twitter" href="https://www.youtube.com/user/barnardosaustralia/featured"><i class="fa fa-youtube"></i></a>
-            </div>
-          </div>
-
-          <div class="col-lg-6">
-            <div class="nav nav-bold nav-uppercase nav-trim justify-content-lg-center">
-              <a class="nav-link" href="about.html">About</a>
             </div>
           </div>
 
