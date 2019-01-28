@@ -75,11 +75,11 @@
             <div class="col-md-7 col-xl-8 mr-md-auto">
               <h1>Usage Guide</h1>
               <p>The following describes the features and APIs of Neo4jMapper. It does not describe in detail how to install, 
-                configure or use Neo4j. For more inforation about Neo4j, please consult the Neo4j 
+                configure or use Neo4j. For more information about Neo4j, please consult the Neo4j 
                 <a href="https://neo4j.com/docs/">documentation</a>.
               </p>
               <p>Neo4jMapper uses <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> for all database 
-                connections. Neo4jMapper has a dependency on this driver, and installs the driver when the Neo4jMapper 
+                connections. Neo4jMapper has a dependency on this driver and installs the driver when the Neo4jMapper 
                 <a href="https://www.nuget.org/packages/Neo4jMapper/">nuget</a> package is added to your project. You should consult 
                 the driver <a href="https://neo4j.com/docs/driver-manual/current/">documentation</a> for instructions on how to 
                 connect to the database and perform cypher queries.
@@ -106,7 +106,7 @@
               </code></pre>
               <h2 id="working-with-neo4j-driver">Working with Neo4j Driver output</h2>
               <p><a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> allows you to run queries synchronously 
-                or asynchronously, both of which provide slightly different APIs due to the way .NET Framwork deals with enumerated 
+                or asynchronously, both of which provide slightly different APIs due to the way .NET Framework deals with enumerated 
                 results.
               </p>
               <h3>Synchronous Operations</h3>
@@ -127,7 +127,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
   }
 }
               </code></pre>
-              <p>In this example the <span class="badge badge-secondary">Run</span> method returns an 
+              <p>In this example, the <span class="badge badge-secondary">Run</span> method returns an 
                 <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResult.cs">IStatementResult</a>
                 object which provides us access to the records via the <i>IEnumerable&lt;IRecord&gt;</i>. As we enumerate 
                 IStatementResult, each <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IRecord.cs">IRecord</a>
@@ -136,7 +136,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
               </p>
               <p>When we run this example, it outputs the query values to the console using 
                 <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a> <span class="badge badge-secondary">Dump</span> 
-                method, which provides a handy json view of any .NET object or collection.
+                method, which provides a handy JSON view of any .NET object or collection.
               </p>
               <pre><code class="language-json">
 {
@@ -189,7 +189,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
   }
 }
               </code></pre>
-              <p>In this example the awaitable <span class="badge badge-secondary">RunAsync</span> method returns an 
+              <p>In this example, the awaitable <span class="badge badge-secondary">RunAsync</span> method returns an 
                 <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/IStatementResultCursor.cs">IStatementResultCursor</a>
                 object which provides us access to the records via the awaitable 
                 <span class="badge badge-secondary">ToListAsync</span> method, which returns us a <i>List&lt;IRecord&gt;</i>.
@@ -240,7 +240,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
                 tedious. Trying to extract values from these objects and assigning them to your models would result in a lot of 
                 repetitive mapping code.
               </p>
-              <p>Neo4jMapper is designed to reduce or eliminate this mapping code. It provides extension methods which takes the 
+              <p>Neo4jMapper is designed to reduce or eliminate this mapping code. It provides extension methods which take the 
                 IStatementResult and IStatementResultCursor output and turns it into collections of entities. It does this by way 
                 of a generic <i>Func</i> delegate which defines the .NET types that the cypher values should be converted to.
               </p>
@@ -251,7 +251,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
                 <p>For brevity, we'll also drop the driver initialization, session creation and console output steps.</p>
               </div>
               <h3 id="map-method">Map&lt;TReturn&gt; method</h3>
-              <p>So lets re-visit the first example and use the <span class="badge badge-secondary">Map&lt;TReturn&gt;</span> 
+              <p>So let's re-visit the first example and use the <span class="badge badge-secondary">Map&lt;TReturn&gt;</span> 
                 method to convert the person nodes to <i>Person</i> models.
               </p>
               <pre><code class="language-csharp">
@@ -260,11 +260,12 @@ var cursor = await session.RunAsync(@"
   RETURN person
   LIMIT 1");
 
-var person = (await cursor.SingleAsync()).Map&lt;Person&gt;();
+var person = (await cursor.SingleAsync())
+  .Map&lt;Person&gt;();
               </code></pre>
-              <p>In this example we're using the Neo4j Driver's <span class="badge badge-secondary">SingleAsync</span> extension 
-                method as we're expecting only 1 result, so a single <i>IReturn</i> is given. Our 
-                <span class="badge badge-secondary">Map&lt;TReturn&gt;</span> method takes <i>IReturn</i> and extracts the cypher
+              <p>In this example, we're using the Neo4j Driver's <span class="badge badge-secondary">SingleAsync</span> extension 
+                method as we're expecting only 1 result, so a single <i>IRecord</i> is given. Our 
+                <span class="badge badge-secondary">Map&lt;TReturn&gt;</span> method takes <i>IRecord</i> and extracts the cypher
                 value from the dictionary and converts it to <i>TReturn</i> type, which in this case is <i>Person</i> type.
               </p>
               <pre><code class="language-json">
@@ -283,14 +284,15 @@ var cursor = await session.RunAsync(@"
   WITH actor, collect(movie) AS movies
   RETURN actor, head(movies) AS firstMovie");
 
-var actorWithMovie = (await cursor.SingleAsync()).Map((Person actor, Movie firstMovie) => new
-{
-  Actor = actor,
-  FirstMovie = firstMovie
-});
+var actorWithMovie = (await cursor.SingleAsync())
+  .Map((Person actor, Movie firstMovie) => new
+  {
+    Actor = actor,
+    FirstMovie = firstMovie
+  });
               </code></pre>
-              <p>In this example we're using the <span class="badge badge-secondary">Map&lt;TValue1, TValue2, TReturn&gt;</span> 
-                method which requries you to declare the two input types we're expecting from the cypher values, and the return type.
+              <p>In this example, we're using the <span class="badge badge-secondary">Map&lt;TValue1, TValue2, TReturn&gt;</span> 
+                method which requires you to declare the two input types we're expecting from the cypher values and the return type.
                </p>
               <p>The order of <i>TValue1</i> and <i>TValue2</i> is important. It should follow the same order as the cypher <i>RETURN</i>
                 statement. So in our example, <i>TValue1</i> is of type <i>Person</i> and <i>TValue2</i> is of type <i>Movie</i>.
@@ -313,7 +315,7 @@ var actorWithMovie = (await cursor.SingleAsync()).Map((Person actor, Movie first
 }
               </code></pre>
               <h3 id="returning-lists">Returning lists</h3>
-              <p>So far we have been returning only a single record with one or more cypher values, however it is more typical
+              <p>So far we have been returning only a single record with one or more cypher values, however, it is more typical
                 to return a list of values and have these converted to a list of .NET types. Neo4jMapper provides 
                 <span class="badge badge-secondary">Map</span> methods which work with lists the same as with single records.
               </p>
@@ -330,11 +332,12 @@ var cursor = await session.RunAsync(@"
   WITH actor, collect(movie) AS movies
   RETURN actor, head(movies) AS newestMovie");
 
-var actorWithMovies = (await cursor.ToListAsync()).Map((Person actor, Movie newestMovie) => new
-{
-  Actor = actor,
-  NewestMovie = newestMovie
-}).ToList();
+var actorWithMovies = (await cursor.ToListAsync())
+  .Map((Person actor, Movie newestMovie) => new
+  {
+    Actor = actor,
+    NewestMovie = newestMovie
+  }).ToList();
               </code></pre>
               <p>Because we're expecting to receive a list of results, this time we'll use the Neo4j Driver 
                 <span class="badge badge-secondary">ToListAsync</span> method to return a list of <I>IRecord</I> objects. To convert these
@@ -383,10 +386,10 @@ var actorWithMovies = (await cursor.ToListAsync()).Map((Person actor, Movie newe
                 </ul>
               </p>
               <p>When specifying the type to use in the <span class="badge badge-secondary">Map</span> method's <i>Func</i> input parameters,
-                these must exactly match the expected type to be returned from the cypher values, otherwise an exception is thrown in the mapper.
+                these must exactly match the expected type to be returned from the cypher values, otherwise, an exception is thrown in the mapper.
               </p>
               <p>The next rather contrived example returns some extra cypher values to demonstrate how they should be properly mapped.</p>
-              <p>First we've created a projection object to hold all our cypher values.</p>
+              <p>First, we've created a projection object to hold all our cypher values.</p>
               <pre><code class="language-csharp">
 class Example6Projection
 {
@@ -415,7 +418,7 @@ var actorWithMovies = (await cursor.SingleAsync())
       Movies = movies
     });
               </code></pre>
-              <p>As we can see, the <i>Func</i> input parameters exactly match, and are in the same order as the <i>RETURN</i> statement
+              <p>As we can see, the <i>Func</i> input parameters exactly match and are in the same order as the <i>RETURN</i> statement
                 cypher value list.
               </p>
               <pre><code class="language-json">
@@ -454,7 +457,7 @@ var actorWithMovies = (await cursor.SingleAsync())
 }
               </code></pre>
               <h3 id="unsupported-types">Unsupported .NET types</h3>
-              <p>Practically all .NET clr types and custom types are supported, however there are a few exceptions. Neo4j v3.4 introduced new
+              <p>Practically all .NET clr types and custom types are supported, however, there are a few exceptions. Neo4j v3.4 introduced new
                 temporal data types for working with date and time values, and Neo4j Driver introduced new .NET types to encapsulate these
                 values, such as <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/Types/ZonedDateTime.cs">ZonedDateTime</a>.
                 Because of this, it is not directly possible to convert between <i>ZonedDateTime</i> and the .NET clr equivalent of <i>DateTimeOffset</i>
@@ -468,9 +471,10 @@ class Example7CustomType
 
 var cursor = await session.RunAsync(@"RETURN { temporalValue: datetime() } as map");
 
-var customType = (await cursor.SingleAsync()).Map&lt;Example7CustomType&gt;();
+var customType = (await cursor.SingleAsync())
+  .Map&lt;Example7CustomType&gt;();
               </code></pre>
-              <p>The above code fails cause the mapper is unable to automatically convert the incoming cypher <i>DateTime</i> value which
+              <p>The above code fails because the mapper is unable to automatically convert the incoming cypher <i>datetime</i> value which
               is returned as a <i>ZonedDateTime</i> to the equivalent .NET clr <i>DateTimeOffset</i>. The solution instead is to return
               the ZonedDateTime as-is.</p>
               <pre><code class="language-csharp">
@@ -511,11 +515,11 @@ var customType = (await cursor.SingleAsync()).Map&lt;Example8CustomType&gt;();
                 </p>
               </div>
               <h2 id="persisting-data">Persisting Data</h2>
-              <p>So far we've only dealt with querying for cypher values. However, in any non-trivial application we would want to create or
+              <p>So far we've only dealt with querying for cypher values. However, in any non-trivial application, we would want to create or
                 update some records. The way we'd achieve this is through the use of <a href="https://neo4j.com/docs/cypher-manual/current/syntax/parameters/">parameters</a>.
               </p>
               <p>Similar to the way Neo4j Driver returns values as a dictionary, parameters are also constructed using a <i>Dictionary&lt;string, object&gt;</i>.
-                In fact Neo4j Driver already has good support for parameters, as long as we are passing simple values.
+                In fact, Neo4j Driver already has good support for parameters, as long as we are passing simple values.
               </p>
               <p>We'll add an <a href="https://www.imdb.com/">IMDB</a> number to an existing movie.</p>
               <pre><code class="language-csharp">
@@ -534,9 +538,10 @@ var cursor = await session.RunAsync(@"
   SET movie.imdb = $imdb
   RETURN movie", parameters);
 
-var updatedMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+var updatedMovie = (await cursor.SingleAsync())
+  .Map&lt;IMDBMovie&gt;();
               </code></pre>
-              <p>The newly added imdb property is now returned in the model.</p>
+              <p>The newly added IMDB property is now returned in the model.</p>
               <pre><code class="language-json">
 {
 	imdb: tt0133093,
@@ -561,12 +566,13 @@ var cursor = await session.RunAsync(@"
   SET movie.imdb = $imdb
   RETURN movie", parameters);
 
-var updatedMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+var updatedMovie = (await cursor.SingleAsync())
+  .Map&lt;IMDBMovie&gt;();
               </code></pre>
               <h3 id="parameter-maps">Parameter Maps</h3>
               <p>Setting single values is straightforward enough but what if you wanted to create or update an entire record? For instance,
-                creating a movie? For this, Neo4jMapper provides an an extension method <span class="badge badge-secondary">ToParameter</span>
-                which takes a model and converts the public properties to key/value pairs, and creates a map using the given key.
+                creating a movie? For this, Neo4jMapper provides an extension method <span class="badge badge-secondary">ToParameter</span>
+                which takes a model and converts the public properties to key/value pairs and creates a map using the given key.
               </p>
               <p>We'll create a new movie object and convert it to a parameter map.</p>
               <pre><code class="language-csharp">
@@ -630,7 +636,8 @@ var cursor = await session.RunAsync(@"
   CREATE (movie:Movie $newMovie)
   RETURN movie", parameters);
 
-var createdMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
+var createdMovie = (await cursor.SingleAsync())
+  .Map&lt;IMDBMovie&gt;();
               </code></pre>
               <p>Which returns us our new movie.</p>
               <pre><code class="language-json">
@@ -656,7 +663,7 @@ var createdMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
                   </tr>
                   <tr>
                     <td>WithEntities</td>
-                    <td>Creates an array of parameter maps from a collection given entity models</td>
+                    <td>Creates an array of parameter maps from a collection of given entity models</td>
                   </tr>
                   <tr>
                     <td>WithMap</td>
@@ -680,10 +687,10 @@ var createdMovie = (await cursor.SingleAsync()).Map&lt;IMDBMovie&gt;();
               <p>When using <span class="badge badge-secondary">ToParameter</span> directly, or via 
                 <span class="badge badge-secondary">WithEntity</span> method, the converter will only create valid key/value pairs (maps)
                 from the root object properties. Any nested types, whether objects or collections, will not be converted correctly,
-                resulting in exceptions thrown when trying to persist data. For this reason it is advisable to mark any nested properties
+                resulting in exceptions thrown when trying to persist data. For this reason, it is advisable to mark any nested properties
                 with <i>IgnoreDataMemberAttribute</i> to ensure they are ignored by the converter.
               </p>
-              <p>The following provides an example how to create a complex parameter list with ignored properties.</p>
+              <p>The following provides an example of how to create a complex parameter list with ignored properties.</p>
               <pre><code class="language-csharp">
 public class Person
 {
@@ -737,14 +744,14 @@ await session.RunAsync(@"
   SET movie = newMovie", parameters);
               </code></pre>
               <p>Here we can see that when we call <span class="badge badge-secondary">WithEntity</span> and pass our person model,
-                (actorWithMovies) the <i>MoviesActedIn</i> property is ignored when we create the map. We create a second map (or collection
+              <i>actorWithMovies</i>, the <i>MoviesActedIn</i> property is ignored when we create the map. We create a second map (or collection
                 of maps) when we call <span class="badge badge-secondary">WithEntities</span> and pass our movie collection. This is 
                 <i>UNWIND</i> in cypher to extract the map from the list when we create each movie node.
               </p>
               <h2 id="working-with-entities">Working with Entities</h2>
-              <p>In a typical enterprise application we would probably need to create, update, or even delete some records. In our movies
+              <p>In a typical enterprise application, we would probably need to create, update, or even delete some records. In our movies
                 examples, we may need to create a new movie and link it to an actor, or we may need to make a change to an existing movie,
-                perhaps to add the IMDB number. In these cases we'll need to access a node directly so that we can perform some change,
+                perhaps to add the IMDB number. In these cases, we'll need to access a node directly so that we can perform some change,
                 or remove it, or modify its relationships.
               </p>
               <p>So far we've accessed individual records by performing a <i>MATCH</i> on some property. However, without using unique
@@ -759,7 +766,7 @@ await session.RunAsync(@"
               <p>Neo4jMapper provides a <i>NodeIdAttribute</i> which you can use to decorate a property in your entity with a type <i>long</i>.
                 When a node is fetched and mapped, the node's id is automatically mapped to this property.
               </p>
-              <p>In this example we'll query a list of movies and then add an IMDB number to 'The Matrix' movie and update it by its node id.
+              <p>In this example, we'll query a list of movies and then add an IMDB number to 'The Matrix' movie and update it by its node id.
               </p>
               <pre><code class="language-csharp">
 public class MovieEntity
@@ -779,7 +786,8 @@ var cursor = await session.RunAsync(@"
   MATCH (movie:Movie {released: $year})
   RETURN movie", new { year = 1999 });
 
-var movies = (await cursor.ToListAsync()).Map&lt;MovieEntity&gt;();
+var movies = (await cursor.ToListAsync())
+  .Map&lt;MovieEntity&gt;();
 
 var matrix = movies.Single(p => p.title == "The Matrix");
 matrix.imdb = "tt0133093";
@@ -794,10 +802,11 @@ cursor = await session.RunAsync(@"
   SET movie = $updatedMovie
   RETURN movie", updateParams);
 
-var updatedMovie = (await cursor.SingleAsync()).Map&lt;MovieEntity&gt;();
+var updatedMovie = (await cursor.SingleAsync())
+  .Map&lt;MovieEntity&gt;();
               </code></pre>
               <p>Notice that we've also added the <i>IgnoreDataMemberAttribute</i> to the <i>id</i> property, because when we convert
-                the entity back into a map using <span class="badge badge-secondary">WithEntity</span> we don't want the id being included
+                the entity back into a map using <span class="badge badge-secondary">WithEntity</span> we don't want the id included
                 in the map, otherwise it will get persisted as another property in the node. A node's id is not a property of a node.
               </p>
               <pre><code class="language-json">
@@ -841,7 +850,8 @@ var cursor = await session.RunAsync(@"
   MATCH (movie:Movie {released: $year})
   RETURN movie", new { year = 1999 });
 
-var movies = (await cursor.ToListAsync()).Map&lt;MovieEntity&gt;();
+var movies = (await cursor.ToListAsync())
+  .Map&lt;MovieEntity&gt;();
 
 var matrix = movies.Single(p => p.title == "The Matrix");
 matrix.imdb = "tt0133093";
@@ -852,9 +862,9 @@ var updatedMovie = await session.GetNodeAsync&lt;MovieEntity&gt;(matrix.id);
               </code></pre>
               <h2 id="advanced-mapping">Advanced Mapping</h2>
               <p>Under normal circumstances, the <span class="badge badge-secondary">Map</span> and 
-                <span class="badge badge-secondary">WithEntity</span> methods covers most mapping requirements, however on occasion you may need
-                more control over mapping, and for this we can use <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>
-                directly. The <span class="badge badge-secondary">Map</span> method, via <i>ValueMapper</i> class calls ServiceStack's 
+                <span class="badge badge-secondary">WithEntity</span> methods cover most mapping requirements, however on occasion, you may need
+                more control over mapping, and for this, we can use <a href="https://github.com/ServiceStack/ServiceStack.Text">ServiceStack.Text</a>
+                directly. The <span class="badge badge-secondary">Map</span> method, via <i>ValueMapper</i> class, calls ServiceStack's 
                 <span class="badge badge-secondary">FromObjectDictionary</span> method, and <span class="badge badge-secondary">WithEntity</span>
                 and other extension methods call ServiceStack's <span class="badge badge-secondary">ToObjectDictionary</span> method.
               </p>
@@ -862,7 +872,7 @@ var updatedMovie = await session.GetNodeAsync&lt;MovieEntity&gt;(matrix.id);
                 of helpers, utilities and extension methods to cover practically all mapping & conversion use-cases, as well as JSON and CSV
                 serializers.
               </p>
-              <p>One method in particular, <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> may be useful when mapping between entity 
+              <p>In particular, the <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> may be useful when mapping between entity 
                 models and viewmodels. It works similar to <a href="https://automapper.org/">AutoMapper</a> in that it copies all matching object parameters.
                 And as with all other mapping methods, <span class="badge badge-secondary">ConvertTo&lt;T&gt;</span> uses optimised reflection-based mapping to provide the highest performance.
               </p>
@@ -871,7 +881,7 @@ var updatedMovie = await session.GetNodeAsync&lt;MovieEntity&gt;(matrix.id);
                 temporal types such as <a href="https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/Neo4j.Driver/Neo4j.Driver/V1/Types/ZonedDateTime.cs">ZonedDateTime</a> 
                 and <i>DateTimeOffset</i>, for example.
               </p>
-              <p>For this we can use Custom Type Converters. This is a new ServiceStack.Text feature which enables the developer to write a converter
+              <p>For this, we can use Custom Type Converters. This is a new ServiceStack.Text feature which enables the developer to write a converter
                 that takes any .NET type and converts it to a different .NET type. These converters are registered in ServiceStack.Text, and when a mapping
                 operation detects source & target types defined in the converter, then this converter is invoked.
               </p>
@@ -908,7 +918,7 @@ var updatedMovie = await session.GetNodeAsync&lt;MovieEntity&gt;(matrix.id);
               <p>Although the supplied type converters are bi-directional (each registration method registers two converters to convert each way) 
                 conversion does not work when mapping entity models back to parameters. The reason for this is that for the converter to work,
                 the source and target types must both be known. When a node is mapped to an entity, we can read the source type from the
-                dictionary, and we know the target type defined in the entity model, then conversion works. But when we convert an entity model 
+                dictionary, and we know the target type defined in the entity model, then the conversion works. But when we convert an entity model 
                 back to a parameter map, we only know source type. We cannot infer the target type (the node's property) from anywhere.
               </p>
               <p>For this reason, we suggest wherever possible to use Neo4j Driver temporal types instead of .NET clr types. If this is not
