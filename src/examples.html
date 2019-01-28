@@ -73,7 +73,526 @@
           <div class="row mb-8">
             <div class="col-lg-8 mx-auto">
               <h1>Examples</h1>
-              <p>Coming real soon...</p>
+              <p>The following provides some examples adapted from the James Bond movie
+                 <a href="https://neo4j.com/graphgist/know-more-about-james-bond-movie">GraphGist</a> by Eric Lee.  
+              </p>
+              <p>As with the <a href="guide.html">Usage Guide</a>, the examples are supplied with the Neo4jMapper <a href="https://github.com/barnardos-au/Neo4jMapper">source</a>, 
+                and can be run from the console.
+              </p>
+              <h3>Top 3 Box Office Movies</h3>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (film:Film) 
+  WITH film ORDER BY film.Box DESC 
+  RETURN film 
+  LIMIT 3");
+
+var boxOfficeFilms = (await cursor.ToListAsync())
+  .Map&lt;Film&gt;()
+  .Select(f => new
+  {
+    f.Name,
+    f.Year,
+    BoxOffice = f.Box
+  });
+              </code></pre>
+              <p>Output:</p>
+              <pre><code class="language-json">
+[
+	{
+		__type: "<>f__AnonymousType0`3[
+			[
+				System.String, System.Private.CoreLib
+			],[
+				System.Int32, System.Private.CoreLib
+			],[
+				System.Int32, System.Private.CoreLib
+			]
+		], Examples",
+		Name: Skyfall,
+		Year: 2012,
+		BoxOffice: 1108561008
+	},
+	{
+		Name: Thunderball,
+		Year: 1965,
+		BoxOffice: 1014941117
+	},
+	{
+		Name: Goldfinger,
+		Year: 1964,
+		BoxOffice: 912257512
+	}
+]
+              </code></pre>
+              <h3>Movies By Actor</h3>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (people:People)-[:AS_BOND_IN]->(film:Film)
+  RETURN people, COLLECT(film)");
+
+var moviesByActor = (await cursor.ToListAsync())
+  .Map((People people, IEnumerable&lt;Film&gt; films) => new
+  {
+    Actor = people.Name,
+    BondMovies = films.Count()
+  }).OrderByDescending(o => o.BondMovies);
+              </code></pre>
+              <p>Output:</p>
+              <pre><code class="language-json">
+[
+	{
+		__type: "<>f__AnonymousType1`2[
+			[
+				System.String, System.Private.CoreLib
+			],[
+				System.Int32, System.Private.CoreLib
+			]
+		], Examples",
+		Actor: Roger Moore,
+		BondMovies: 7
+	},
+	{
+		Actor: Sean Connery,
+		BondMovies: 6
+	},
+	{
+		Actor: Pierce Brosnan,
+		BondMovies: 4
+	},
+	{
+		Actor: Daniel Craig,
+		BondMovies: 4
+	},
+	{
+		Actor: Timothy Dalton,
+		BondMovies: 2
+	},
+	{
+		Actor: George Lazenby,
+		BondMovies: 1
+	}
+]
+              </code></pre>
+              <h3>Michelle Yeoh Movie</h3>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (people:People)-[:IS_BOND_GIRL_IN]->(film:Film)
+  WHERE people.Name=$Name
+  RETURN people, film", new
+  {
+    Name = "Michelle Yeoh"
+  });
+
+var michelleFilms = (await cursor.ToListAsync())
+  .Map((People people, Film film) => new
+  {
+    film.Year,
+    Title = film.Name,
+    people.Role
+  });
+              </code></pre>
+              <p>Output:</p>
+              <pre><code class="language-json">
+[
+	{
+		__type: "<>f__AnonymousType3`3[
+			[
+				System.Int32, System.Private.CoreLib
+			],[
+				System.String, System.Private.CoreLib
+			],[
+				System.String, System.Private.CoreLib
+			]
+		], Examples",
+		Year: 1997,
+		Title: Tomorrow Never Dies,
+		Role: Wai Lin
+	}
+]
+              </code></pre>
+              <h3>Vehicle Brands</h3>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (film:Film)-[:HAS_VEHICLE]->(vehicle:Vehicle)
+  RETURN DISTINCT vehicle.Brand AS Brand,
+  count(vehicle.Model) AS Models,
+  collect(DISTINCT film) AS Films");
+
+var vehicleBrands = (await cursor.ToListAsync())
+  .Map((string brand, int modelCount, IEnumerable&lt;Film&gt; films) => new
+  {
+    Brand = brand,
+    Models = modelCount,
+    Movies = films.Select(f => f.Name)
+  }).OrderByDescending(o => o.Models);
+              </code></pre>
+              <p>Output:</p>
+              <pre><code class="language-json">
+[
+	{
+		__type: "<>f__AnonymousType4`3[
+			[
+				System.String, System.Private.CoreLib
+			],[
+				System.Int32, System.Private.CoreLib
+			],[
+				System.Collections.Generic.IEnumerable`1[
+					[
+						System.String, System.Private.CoreLib
+					]
+				], System.Private.CoreLib
+			]
+		], Examples",
+		Brand: Ford,
+		Models: 30,
+		Movies: 
+		[
+			Dr. No,
+			Goldfinger,
+			Thunderball,
+			On Her Majesty's Secret Service,
+			Diamonds Are Forever,
+			The Spy Who Loved Me,
+			A View to a Kill,
+			Licence to Kill,
+			Tomorrow Never Dies,
+			Die Another Day,
+			Casino Royale,
+			Quantum of Solace
+		]
+	},
+	{
+		Brand: Chevrolet,
+		Models: 17,
+		Movies: 
+		[
+			Dr. No,
+			Diamonds Are Forever,
+			Live and Let Die,
+			Moonraker,
+			A View to a Kill,
+			The Living Daylights,
+			Licence to Kill,
+			Tomorrow Never Dies
+		]
+	},
+	{
+		Brand: Aston Martin,
+		Models: 14,
+		Movies: 
+		[
+			Goldfinger,
+			Thunderball,
+			On Her Majesty's Secret Service,
+			The Living Daylights,
+			GoldenEye,
+			Tomorrow Never Dies,
+			The World Is Not Enough,
+			Die Another Day,
+			Casino Royale,
+			Quantum of Solace,
+			Skyfall,
+			Spectre
+		]
+	},
+	{
+		Brand: Rolls-Royce,
+		Models: 12,
+		Movies: 
+		[
+			From Russia with Love,
+			Goldfinger,
+			On Her Majesty's Secret Service,
+			Moonraker,
+			For Your Eyes Only,
+			Octopussy,
+			A View to a Kill,
+			Licence to Kill,
+			The World Is Not Enough,
+			Spectre
+		]
+	},
+	{
+		Brand: Mercedes Benz,
+		Models: 12,
+		Movies: 
+		[
+			Goldfinger,
+			On Her Majesty's Secret Service,
+			Diamonds Are Forever,
+			For Your Eyes Only,
+			Octopussy,
+			The Living Daylights,
+			GoldenEye,
+			Tomorrow Never Dies,
+			Skyfall,
+			Spectre
+		]
+	},
+	{
+		Brand: Land Rover,
+		Models: 12,
+		Movies: 
+		[
+			Octopussy,
+			The Living Daylights,
+			Tomorrow Never Dies,
+			Casino Royale,
+			Quantum of Solace,
+			Skyfall,
+			Spectre
+		]
+	},
+	{
+		Brand: Jaguar,
+		Models: 7,
+		Movies: 
+		[
+			Die Another Day,
+			Casino Royale,
+			Quantum of Solace,
+			Skyfall,
+			Spectre
+		]
+	},
+	{
+		Brand: AMC,
+		Models: 5,
+		Movies: 
+		[
+			Moonraker,
+			A View to a Kill,
+			Licence to Kill,
+			Tomorrow Never Dies
+		]
+	},
+	{
+		Brand: BMW,
+		Models: 5,
+		Movies: 
+		[
+			Octopussy,
+			GoldenEye,
+			Tomorrow Never Dies,
+			The World Is Not Enough
+		]
+	},
+	{
+		Brand: AvtoVAZ,
+		Models: 5,
+		Movies: 
+		[
+			The Living Daylights,
+			GoldenEye,
+			The World Is Not Enough
+		]
+	},
+	{
+		Brand: Audi,
+		Models: 4,
+		Movies: 
+		[
+			The Living Daylights,
+			Quantum of Solace,
+			Skyfall
+		]
+	},
+	{
+		Brand: Alfa,
+		Models: 3,
+		Movies: 
+		[
+			Octopussy,
+			Quantum of Solace
+		]
+	},
+	{
+		Brand: Citroën,
+		Models: 2,
+		Movies: 
+		[
+			On Her Majesty's Secret Service,
+			For Your Eyes Only
+		]
+	},
+	{
+		Brand: Lotus,
+		Models: 2,
+		Movies: 
+		[
+			The Spy Who Loved Me,
+			For Your Eyes Only
+		]
+	},
+	{
+		Brand: Rover,
+		Models: 2,
+		Movies: 
+		[
+			Octopussy,
+			The Living Daylights
+		]
+	},
+	{
+		Brand: Sunbeam,
+		Models: 1,
+		Movies: 
+		[
+			Dr. No
+		]
+	},
+	{
+		Brand: Toyota,
+		Models: 1,
+		Movies: 
+		[
+			You Only Live Twice
+		]
+	},
+	{
+		Brand: Triumph,
+		Models: 1,
+		Movies: 
+		[
+			Diamonds Are Forever
+		]
+	},
+	{
+		Brand: Leyland,
+		Models: 1,
+		Movies: 
+		[
+			The Spy Who Loved Me
+		]
+	},
+	{
+		Brand: Lafer,
+		Models: 1,
+		Movies: 
+		[
+			Moonraker
+		]
+	},
+	{
+		Brand: Maserati,
+		Models: 1,
+		Movies: 
+		[
+			Licence to Kill
+		]
+	},
+	{
+		Brand: ZAZ,
+		Models: 1,
+		Movies: 
+		[
+			GoldenEye
+		]
+	},
+	{
+		Brand: GAZ,
+		Models: 1,
+		Movies: 
+		[
+			GoldenEye
+		]
+	},
+	{
+		Brand: Daimler,
+		Models: 1,
+		Movies: 
+		[
+			Tomorrow Never Dies
+		]
+	},
+	{
+		Brand: Volkswagen,
+		Models: 1,
+		Movies: 
+		[
+			Quantum of Solace
+		]
+	},
+	{
+		Brand: Volvo,
+		Models: 1,
+		Movies: 
+		[
+			Quantum of Solace
+		]
+	}
+]
+              </code></pre>
+              <h3>Directors</h3>
+              <pre><code class="language-csharp">
+var cursor = await session.RunAsync(@"
+  MATCH (people:People)-[r:DIRECTOR_OF]->(film:Film)
+  RETURN people, COLLECT(film)");
+
+var directedMovies = (await cursor.ToListAsync())
+  .Map((People people, IEnumerable&lt;Film&gt; films) => new
+  {
+    Director = people.Name,
+    Time = films.Count()
+  }).OrderByDescending(o => o.Time);
+              </code></pre>
+              <p>Output:</p>
+              <pre><code class="language-json">
+[
+	{
+		__type: "<>f__AnonymousType5`2[
+			[
+				System.String, System.Private.CoreLib
+			],[
+				System.Int32, System.Private.CoreLib
+			]
+		], Examples",
+		Director: John Glen,
+		Time: 5
+	},
+	{
+		Director: Guy Hamilton,
+		Time: 4
+	},
+	{
+		Director: Terence Young,
+		Time: 3
+	},
+	{
+		Director: Lewis Gilbert,
+		Time: 3
+	},
+	{
+		Director: Martin Campbell,
+		Time: 2
+	},
+	{
+		Director: Sam Mendes,
+		Time: 2
+	},
+	{
+		Director: Peter R. Hunt,
+		Time: 1
+	},
+	{
+		Director: Roger Spottiswoode,
+		Time: 1
+	},
+	{
+		Director: Michael Apted,
+		Time: 1
+	},
+	{
+		Director: Lee Tamahori,
+		Time: 1
+	},
+	{
+		Director: Marc Forster,
+		Time: 1
+	}
+]
+              </code></pre>
               <hr>
               <h5>About Neo4jMapper</h5>
               <p class="lead">This software is developed and maintained by the Barnardos Australia software development <a href="https://github.com/barnardos-au">team</a>,
