@@ -85,8 +85,8 @@ var cursor = await Session.RunAsync(@"
   MATCH (person:Person {name: 'Cuba Gooding Jr.'})-[:ACTED_IN]->(movie:Movie)
   RETURN person, COLLECT(movie) AS movies");
 
-var actor = (await cursor.SingleAsync())
-  .Map((Person person, IEnumerable&lt;Movie&gt; movies) =>
+var actor = await cursor
+  .MapSingleAsync((Person person, IEnumerable&lt;Movie&gt; movies) =>
   {
     person.MoviesActedIn = movies;
     return person;
@@ -97,11 +97,9 @@ Assert.AreEqual(1968, actor.born);
 Assert.AreEqual(4, actor.MoviesActedIn.Count());
               </code></pre>
               <p>The example cypher query returns a single <i>Person</i> node and a list of <i>Movie</i> nodes.
-              We <i>await</i> the response from the database request and collect the cypher values using the
-              <a href="https://github.com/neo4j/neo4j-dotnet-driver">Neo4j Driver</a> <span class="badge badge-secondary">SingleAsync</span> method.
               </p>
-              <p>The <span class="badge badge-secondary">Map</span> method will try to convert the cypher values to .NET types declared in the <i>Func</i> input parameters,
-              and you can use these for mapping onto an instance of the declared output type.
+              <p>The <span class="badge badge-secondary">MapSingleAsync</span> method will take the single output row returned by <span class="badge badge-secondary">RunAsync</span> method, 
+                and try to convert the cypher values to .NET types declared in the <i>Func</i> input parameters, and map then onto an instance of the declared output type.
               </p>
               <h1>What else does it do?</h1>
               <p>These are some of the features of Neo4jMapper:</p>

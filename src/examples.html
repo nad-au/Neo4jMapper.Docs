@@ -87,8 +87,8 @@ var cursor = await session.RunAsync(@"
   RETURN film 
   LIMIT 3");
 
-var boxOfficeFilms = (await cursor.ToListAsync())
-  .Map&lt;Film&gt;()
+var boxOfficeFilms = (await cursor
+  .MapAsync&lt;Film&gt;())
   .Select(f => new
   {
     f.Name,
@@ -131,12 +131,12 @@ var cursor = await session.RunAsync(@"
   MATCH (people:People)-[:AS_BOND_IN]->(film:Film)
   RETURN people, COLLECT(film)");
 
-var moviesByActor = (await cursor.ToListAsync())
-  .Map((People people, IEnumerable&lt;Film&gt; films) => new
+var moviesByActor = (await cursor
+  .MapAsync((People people, IEnumerable&lt;Film&gt; films) => new
   {
     Actor = people.Name,
     BondMovies = films.Count()
-  }).OrderByDescending(o => o.BondMovies);
+  })).OrderByDescending(o => o.BondMovies);
               </code></pre>
               <p>Output:</p>
               <pre><code class="language-json">
@@ -184,8 +184,8 @@ var cursor = await session.RunAsync(@"
     Name = "Michelle Yeoh"
   });
 
-var michelleFilms = (await cursor.ToListAsync())
-  .Map((People people, Film film) => new
+var michelleFilms = await cursor
+  .MapAsync((People people, Film film) => new
   {
     film.Year,
     Title = film.Name,
@@ -219,13 +219,13 @@ var cursor = await session.RunAsync(@"
   count(vehicle.Model) AS Models,
   collect(DISTINCT film) AS Films");
 
-var vehicleBrands = (await cursor.ToListAsync())
-  .Map((string brand, int modelCount, IEnumerable&lt;Film&gt; films) => new
+var vehicleBrands = (await cursor
+  .MapAsync((string brand, int modelCount, IEnumerable&lt;Film&gt; films) => new
   {
     Brand = brand,
     Models = modelCount,
     Movies = films.Select(f => f.Name)
-  }).OrderByDescending(o => o.Models);
+  })).OrderByDescending(o => o.Models);
               </code></pre>
               <p>Output:</p>
               <pre><code class="language-json">
@@ -530,12 +530,12 @@ var cursor = await session.RunAsync(@"
   MATCH (people:People)-[r:DIRECTOR_OF]->(film:Film)
   RETURN people, COLLECT(film)");
 
-var directedMovies = (await cursor.ToListAsync())
-  .Map((People people, IEnumerable&lt;Film&gt; films) => new
+var directedMovies = (await cursor
+  .MapAsync((People people, IEnumerable&lt;Film&gt; films) => new
   {
     Director = people.Name,
     Time = films.Count()
-  }).OrderByDescending(o => o.Time);
+  })).OrderByDescending(o => o.Time);
               </code></pre>
               <p>Output:</p>
               <pre><code class="language-json">

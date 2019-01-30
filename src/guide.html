@@ -181,7 +181,7 @@ using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
       RETURN movie
       LIMIT 1");
 
-    foreach (var record in (await cursor.ToListAsync()))
+    foreach (var record in await cursor.ToListAsync())
     {
       var output = record.Values.Dump();
       Console.WriteLine(output);
@@ -485,7 +485,8 @@ class Example8CustomType
 
 var cursor = await session.RunAsync(@"RETURN { temporalValue: datetime() } as map");
 
-var customType = (await cursor.SingleAsync()).Map&lt;Example8CustomType&gt;();
+var customType = (await cursor.SingleAsync())
+  .Map&lt;Example8CustomType&gt;();
               </code></pre>
               <p>This works correctly and maps the native Neo4j Driver type.</p>
               <pre><code class="language-json">
@@ -514,6 +515,18 @@ var customType = (await cursor.SingleAsync()).Map&lt;Example8CustomType&gt;();
                   <a href="#custom-type-converters">later</a> in this guide.
                 </p>
               </div>
+              <h3 id="mapasync-methods">MapAsync Convenience Methods</h3>
+              <p>Neo4jMapper provides some convenience methods to simplify mapping results when performing async operations.
+              </p>
+              <p><span class="badge badge-secondary">MapSingleAsync</span> method wraps a call to Neo4j Driver 
+                <span class="badge badge-secondary">SingleAsync</span> followed by a call to <span class="badge badge-secondary">Map</span>
+                for use when expecting exactly 1 row to be returned and mapped.
+              </p>
+              <p><span class="badge badge-secondary">MapAsync</span> iterates the results from <i>IStatementResultCursor</i> using Neo4j Driver 
+                <span class="badge badge-secondary">FetchAsync</span> and for each result, calls <span class="badge badge-secondary">Map</span>
+                method. This provides an efficient way of iterating a large dataset.
+              </p>
+              <p>The remainder of the usage guide will use the above convenience methods.</p>
               <h2 id="persisting-data">Persisting Data</h2>
               <p>So far we've only dealt with querying for cypher values. However, in any non-trivial application, we would want to create or
                 update some records. The way we'd achieve this is through the use of <a href="https://neo4j.com/docs/cypher-manual/current/syntax/parameters/">parameters</a>.
@@ -538,8 +551,7 @@ var cursor = await session.RunAsync(@"
   SET movie.imdb = $imdb
   RETURN movie", parameters);
 
-var updatedMovie = (await cursor.SingleAsync())
-  .Map&lt;IMDBMovie&gt;();
+var updatedMovie = await cursor.MapSingleAsync&lt;IMDBMovie&gt;();
               </code></pre>
               <p>The newly added IMDB property is now returned in the model.</p>
               <pre><code class="language-json">
@@ -566,8 +578,7 @@ var cursor = await session.RunAsync(@"
   SET movie.imdb = $imdb
   RETURN movie", parameters);
 
-var updatedMovie = (await cursor.SingleAsync())
-  .Map&lt;IMDBMovie&gt;();
+var updatedMovie = await cursor.MapSingleAsync&lt;IMDBMovie&gt;();
               </code></pre>
               <h3 id="parameter-maps">Parameter Maps</h3>
               <p>Setting single values is straightforward enough but what if you wanted to create or update an entire record? For instance,
@@ -636,8 +647,7 @@ var cursor = await session.RunAsync(@"
   CREATE (movie:Movie $newMovie)
   RETURN movie", parameters);
 
-var createdMovie = (await cursor.SingleAsync())
-  .Map&lt;IMDBMovie&gt;();
+var createdMovie = await cursor.MapSingleAsync&lt;IMDBMovie&gt;();
               </code></pre>
               <p>Which returns us our new movie.</p>
               <pre><code class="language-json">
@@ -786,8 +796,7 @@ var cursor = await session.RunAsync(@"
   MATCH (movie:Movie {released: $year})
   RETURN movie", new { year = 1999 });
 
-var movies = (await cursor.ToListAsync())
-  .Map&lt;MovieEntity&gt;();
+var movies = await cursor.MapAsync&lt;MovieEntity&gt;();
 
 var matrix = movies.Single(p => p.title == "The Matrix");
 matrix.imdb = "tt0133093";
@@ -802,8 +811,7 @@ cursor = await session.RunAsync(@"
   SET movie = $updatedMovie
   RETURN movie", updateParams);
 
-var updatedMovie = (await cursor.SingleAsync())
-  .Map&lt;MovieEntity&gt;();
+var updatedMovie = await cursor.MapSingleAsync&lt;MovieEntity&gt;();
               </code></pre>
               <p>Notice that we've also added the <i>IgnoreDataMemberAttribute</i> to the <i>id</i> property, because when we convert
                 the entity back into a map using <span class="badge badge-secondary">WithEntity</span> we don't want the id included
@@ -817,7 +825,7 @@ var updatedMovie = (await cursor.SingleAsync())
 	imdb: tt0133093
 }
               </code></pre>
-              <h3>Session Extension methods</h3>
+              <h3>Session &amp; Transaction Extension methods</h3>
               <p>Now we have a way to map the node's id to an entity model and update the node by its id, we can simplify this further
                 by using some basic <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> extension methods which
                 fetch and update nodes by their id. Neo4jMapper provides the following methods.
