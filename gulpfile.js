@@ -180,6 +180,10 @@ gulp.task('distCopy', function() {
   return gulp.src( ['src/**/*', '!src/assets/{js/src,plugin/thesaas,scss}{,/**}'] ).pipe(gulp.dest('dist/'));
 });
 
+gulp.task('copyRedirect', function() {
+  return gulp.src( './_redirects' ).pipe(gulp.dest('dist/'));
+});
+
 
 /*
 |--------------------------------------------------------------------------
@@ -215,7 +219,7 @@ gulp.task('dev', function(cb) {
 
 gulp.task('dist', function(cb) {
   production = true;
-  sequence('distClean', 'dev', 'distCopy', cb);
+  sequence('distClean', 'dev', 'distCopy', 'copyRedirect', cb);
 });
 
 gulp.task('watch', ['serve']);
