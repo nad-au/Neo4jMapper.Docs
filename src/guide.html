@@ -582,7 +582,7 @@ var updatedMovie = await cursor.MapSingleAsync&lt;IMDBMovie&gt;();
               </code></pre>
               <h3 id="parameter-maps">Parameter Maps</h3>
               <p>Setting single values is straightforward enough but what if you wanted to create or update an entire record? For instance,
-                creating a movie? For this, Neo4jMapper provides an extension method <span class="badge badge-secondary">ToParameter</span>
+                creating a movie? For this, Neo4jMapper provides an extension method <span class="badge badge-secondary">ToParameterMap</span>
                 which takes a model and converts the public properties to key/value pairs and creates a map using the given key.
               </p>
               <p>We'll create a new movie object and convert it to a parameter map.</p>
@@ -597,7 +597,7 @@ var movie = new IMDBMovie
   title = "Pulp Fiction"
 };
 
-var map = movie.ToParameter("newMovie");
+var map = movie.ToParameterMap("newMovie");
               </code></pre>
               <p>Which returns a map with a key 'newMovie'.</p>
               <pre><code class="language-json">
@@ -694,7 +694,7 @@ var createdMovie = await cursor.MapSingleAsync&lt;IMDBMovie&gt;();
                 </table>
               </p>
               <h3 id="parameters-limitations">Limitations</h3>
-              <p>When using <span class="badge badge-secondary">ToParameter</span> directly, or via 
+              <p>When using <span class="badge badge-secondary">ToParameterMap</span> directly, or via 
                 <span class="badge badge-secondary">WithEntity</span> method, the converter will only create valid key/value pairs (maps)
                 from the root object properties. Any nested types, whether objects or collections, will not be converted correctly,
                 resulting in exceptions thrown when trying to persist data. For this reason, it is advisable to mark any nested properties
