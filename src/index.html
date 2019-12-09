@@ -72,6 +72,32 @@
         <div class="container">
           <div class="row mb-8">
             <div class="col-lg-8 mx-auto">
+              <h1 class="text-success">What's New?</h1>
+              <h2><span class="badge badge-success mr-3"><a href="https://github.com/barnardos-au/Neo4jMapper/releases/tag/v1.0.8">v1.0.8</a></span>
+                Support async enumerable streams</h2>
+              <p>Supporting C#8 Async Enumerables, Neo4jMapper provides an extension method <code>AsyncResults</code> which takes the 
+                <code>IStatementResultCursor</code> results and provides an async iterator so that the following is possible: </p>
+              <pre><code class="language-csharp">
+var cursor = await Session.RunAsync(@"
+  MATCH (movie:Movie)
+  RETURN movie
+  ORDER BY movie.released");
+
+var movies = await cursor.AsyncResults()
+  .Map&lt;Movie&gt;()
+  .TakeWhile(m => m.released < 2000)
+  .ToListAsync(); 
+  
+Assert.AreEqual(23, movies.Count);
+Assert.IsTrue(movies.Last().released == 1999);
+              </code></pre>
+              <h4>v1.0.8 Released 04-Dec-2019</h4>
+              <ul>
+                <li>Support async enumerable streams via C#8 <code>IAsyncEnumerable</code> on NET Standard 2.1 / NET Core 3.0</li>
+                <li>Improve support of null values in Temporal to clr types in auto mappers</li>
+                <li>Support mapping of <code>IRelationship</code> objects</li>
+                <li>Updated ServiceStack.Text & Neo4j.Driver packages</li>
+              </ul>
               <h1>What is Neo4jMapper?</h1>
               <p class="lead">It is A .NET Standard 2.0 library to simplify mapping of cypher values onto your entity models.</p>
               <h1>What does it do?</h1>
